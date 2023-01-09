@@ -1,0 +1,45 @@
+---
+title: "Bayesian Data Analysis"
+---
+
+## Lectures
+
+### Probability, Conditional Probability and Independence
+
+1. [Introduction] (Lectures/Introduction.qmd)
+
+2. [Probability] (Lectures/Probability.qmd)
+
+3. [Inverse Probability] (Lectures/InverseProbability.qmd)
+
+### Conjugate Families
+
+4. [Conjugate Priors](Lectures/conjugate.qmd)
+
+### Regression and Prediction
+
+5. [Regression and Prediction](Lectures/Regression.qmd)
+
+6. [Q-Q Plot](Lectures/QQplots.qmd)
+
+### MCMC Basics
+
+7. [EM Algorithm](Lectures/EM.qmd)
+
+8. [MCMC Intro](Lectures/MCMCIntro.qmd)
+
+### MCMC Hacking
+
+9. [Diagnosing Problems](Lectures/MCMCHacking.qmd)
+
+10. [Posterior Predictive Model Checking](Lectures/PPMC.qmd)
+
+### Bayesian and Classical Statitsics
+
+11. [DIC and Bayes Factors](Lectures/DIC.qmd)
+
+
+## Examples and Analyses
+
+1. Rare Disease Problem
+

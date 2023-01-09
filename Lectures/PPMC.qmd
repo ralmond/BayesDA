@@ -1,0 +1,4 @@
+---
+title: "Posterior Predictive Model Checks"
+format: revealjs
+---

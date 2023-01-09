@@ -1,0 +1,4 @@
+---
+title: "DIC and Bayes Factors"
+format: revealjs
+---

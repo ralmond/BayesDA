@@ -1,0 +1,6 @@
+---
+title: "Inverse Probability"
+format: revealjs
+---
+
+## 

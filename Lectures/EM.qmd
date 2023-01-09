@@ -1,0 +1,4 @@
+---
+title: "EM Algorithm"
+format: revealjs
+---
