@@ -1,0 +1,194 @@
+---
+title: "Gellman and Hill 13.2"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(nlme)
+
+```
+
+_Models for adjusting individual ratings:  a committee of 10 persons is evaluating 100 job applicants.  Each person on the committee reads 30 applications (structured so that each application is read by 3 people) and gives a numerical rating between 1 and 10._
+
+_(a) It would be nautal to rate the applications based on their combined scores; however, there is aworry that different raters use different standards (severity) and we would like to correct for this.  Set up a model for the ratings (with parameters for the applicants and the raters)._
+
+### Problem setup 
+I <- 100L # applicants
+J <- 10L  # raters
+W <- 3L   # ratings per applicant
+
+theta[i] -- Ability of Applicant i
+theta ~ unif(1,10)  _1 and 10 are hyperparameters_
+
+eta[j] -- Severity of Rater j
+eta ~ norm(0,tau) _0 and tau are hypeparameters_
+tau <- 2
+
+epsilon[i,j] -- measurement error
+epsilon ~ norm(0,sigma)
+sigma <- 1
+
+Y[i,j] = theta[i]+eta[j] +epsilon[i,j]
+
+Score ~ (1 | applicant) + (1 | rater)
+
+### Design Matrix
+
+There are `r choose(10,3)` ways of assigning 3 raters, so more patterns than we have rows.
+
+```{r}
+I <- 100L # applicants
+J <- 10L  # raters
+W <- 3L   # ratings per applicant
+tau <- 2  # SD of raters
+sigma <- 1 # Error SD
+
+assignment <- matrix(0L,I,J)
+for (i in 1L:I) {
+  workload <- colSums(assignment)
+  available <- which (workload < W*I/J)
+  if (i > 75L)
+    cat("Round ",i,": available = ",
+        paste(available,collapse=", "),"\n")
+  ## If not W raters available, then swap until we have enough free raters.
+  while (length(available) < W) {
+    slacker <- which.min(workload)
+    pswaps <- which(!assignment[1L:(i-1L),slacker])
+    swaprow <- sample(pswaps,1L)
+    swapcol <- sample(which(as.logical(assignment[swaprow,])),1L)
+    assignment[swaprow,swapcol] <- 0L
+    assignment[swaprow,slacker] <- 1L
+    workload <- colSums(assignment)
+    available <- which(workload < W*I/J)
+    cat("Round ",i,"x: availble=",paste(available,collapse=", "),
+        "\n")
+  } 
+  assignment[i,sample(available,W)] <- 1L
+}
+colSums(assignment)
+rowSums(assignment)
+write.csv(assignment,"assignment.csv")
+```
+
+## Simulating parameters
+ability[i] -- random value between 1 and 10
+severity[j] -- random value with mean 0 and SD tau=2
+rating[i,j] = ability[i] + severity[j] + error[i,j]
+
+
+
+```{r}
+## simulate parameters/latent variables
+ability <- runif(I,1,10)
+severity <- rnorm(J,0,tau)
+applicant <- rep(1L:I,each=W)
+rater <- 
+  sapply(1L:I,
+              function (i) 
+                which(as.logical(assignment[i,])))
+str(rater)
+rating <- ability[applicant] + severity[rater] + rnorm(I*W,0,sigma)
+rating <- pmax(1,pmin(rating,10)) ## between 1 and 10
+ratings.df <- data.frame(applicant=applicant,
+                         rater=as.vector(rater), 
+                         rating=rating)
+ratings.df
+write.csv(ratings.df,"ratings.csv")
+
+```
+# Plot the data to see if it worked
+```{r}
+library(lattice)
+ratings.df1 <- data.frame(ratings.df, ability=ability[applicant], severity=severity[rater])
+
+```
+
+```{r}
+xyplot(rating~ability,data=ratings.df1)
+xyplot(rating~ability|rater,data=ratings.df1)
+boxplot(rating~rater,data=ratings.df1)
+```
+
+
+
+Fit the model
+```{r}
+library(arm)
+fit <- lmer(rating ~ (1|applicant) + (1|rater), data=ratings.df)
+
+display(fit)
+sqrt(9^2/12)  # sd of unif(1,10)
+
+```
+
+## Check our simulation.
+
+```{r}
+plot(ability,coef(fit)$applicant[,1])
+plot(severity,ranef(fit)$rater[,1])
+plot(fit)
+boxplot(resid(fit)~as.vector(rater))
+```
+
+
+
+_(b) It is possible that some persons on the committee show more variation than others in their ratings.  Expand your model to allow this._
+
+Change this part of the model:
+epsilon[i,j] -- measurement error
+epsilon ~ norm(0,sigma[j])
+sigma[j] ~ gamma(alpha,scale)
+alpha <- 2
+scale <- .5
+```{r}
+alpha <- 2
+scale <- .5
+curve(dgamma(x,alpha,scale=scale),xlim=c(0,5))
+```
+
+Simulation is almost the same, and we can reuse the assignment matrix.
+
+```{r}
+## simulate parameters/latent variables
+#ability <- runif(I,1,10)
+#severity <- rnorm(J,0,tau)
+#applicant <- rep(1L:I,each=W)
+#rater <- 
+#  sapply(1L:I,
+#             function (i) 
+#                which(as.logical(assignment[i,])))
+#str(rater)
+sigma2 <- rgamma(J,alpha,scale=scale)
+rating2 <- ability[applicant] + severity[rater] + rnorm(I*W,0,sigma2[rater])
+rating2 <- pmax(1,pmin(rating2,10)) ## between 1 and 10
+ratings2.df <- data.frame(applicant=applicant,
+                         rater=as.vector(rater), 
+                         rating=rating2,
+                         severity=severity[rater],
+                         ability=ability[applicant],
+                         sigma2=sigma2[rater])
+ratings2.df
+```
+
+```{r}
+xyplot(rating~ability,data=ratings2.df)
+xyplot(rating~ability|rater,data=ratings2.df)
+boxplot(rating~rater,data=ratings2.df)
+
+```
+
+Go ahead and fit the wrong model (we know this doesn't have the right variance structure).
+```{r}
+fit2 <- lmer(rating ~ (1|applicant) + (1|rater), data=ratings2.df)
+
+display(fit2)
+```
+```{r}
+plot(ability,coef(fit2)$applicant[,1])
+plot(severity,ranef(fit2)$rater[,1])
+plot(fit2)
+boxplot(resid(fit2)~as.vector(rater))
+
+```
+

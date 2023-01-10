@@ -1,0 +1,70 @@
+---
+title: 'Confidence Interval:  COVID Vaccine tests'
+output:
+  pdf_document: default
+  html_notebook: default
+---
+
+Data from Moderna Vaccine Study Control Group
+
+```{r}
+X <- 95
+N <- 1500
+```
+
+In a sample of `r N` volunteers receiving the placebo, there were `r X` positive cases; so our estimate for the rate of COVID-19 in this population (and this time period) is `r round(p<-X/N,3)`.
+
+Recall that the formula for the $\alpha$ confidence interval is
+
+C.I. 
+$$ \bar X \pm (z_{1-\alpha/2})\ \sigma_{\bar X}$$
+Here $z_{1-\alpha/2}$ is the $1-\alpha/2$ quantile of the normal distribution.  We can look that up on a [Normal Table](https://pluto.coe.fsu.edu/rdemos/IntroStats/NormalCalculator.Rmd).  For $\alpha=.95$, $z_{1-\alpha/2}=1.96\approx 2$.
+
+For binomial distribution
+$$ \bar X = X/N=\hat p$$
+This is the value `r round(p,3)` we calculated earlier.  The _hat_ over the $p$ is a sign that it is a (maximum likelihood) estimate.
+
+The usual formula for the standard error of a mean (from a simple random sample) is 
+$$ \sigma_{\bar X} = \frac{\sigma}{\sqrt{N}} $$
+For the binomial distribution, the standard deviation is
+$$ \sigma = \sqrt{p(1-p)}; \qquad s = \sqrt{\hat p(1-\hat p)}$$
+Plug that into the formula for the standard error and we get:
+
+$$ \sigma_{\bar X} = \sqrt{p(1-p)/N} $$
+Lets go ahead and calculate those
+```{r}
+p.hat <- X/N
+se <- sqrt(p.hat*(1-p.hat)/N)
+
+```
+
+The probability estimate is `r round(p.hat,3)` and the standard error is `r round(se,4)`.
+
+I'll now use an R trick.  `qnorm()` is the R function to calculate the quantiles of the normal distribution.  If I give it two probabilities, it will give me both the postive and negative values.  So I will pass it $(\alpha/2,1-\alpha/2)$, this gives the values $r round(qnorm(c(.025,.975)),3)$.  
+
+Because R does calculations on vectors, it will calculate both sides of the confidence interval with one formula.
+```{r}
+
+ci <- p.hat + qnorm(c(.025,.975))*se
+```
+Prevlance of covid _at the time and in the locations the study was run_ was between `r sprintf("(%2.1f%%,%2.1f%%)",100*ci[1],100*ci[2])`.
+
+Note that a lot of things have changed between now and then.  In particular, the rise of the much more transmissable delta variant.  But also changes in how seriously people take masking and other percautions.  In particular, there is probably considerable regional variation in the prevalence of COVID-19.
+
+The web site https://www.microcovid.org/ tracks this on a county-by-county basis.
+
+## Severe Covid
+
+Same thing with the severe (hospitalizations or death) COVID numbers.
+
+```{r}
+X1 <- 11
+p1 <- X1/N
+se1 <- sqrt(p1*(1-p1)/N)
+ci1 <- p1 + qnorm(c(.025,.975))*se1
+
+```
+
+Prevlance of severe covid _at the time and in the locations the study was run_ was between `r sprintf("(%2.1f%%,%2.1f%%)",100*ci1[1],100*ci1[2])`.
+
+

@@ -1,0 +1,241 @@
+---
+title: "8 Schools EM"
+author: "Russell Almond"
+date: "1/31/2019"
+output: html_document
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# The 8 Schools Problem
+
+This is the classic eight schools example from Rubin(1981)[^1].  (It is also found in Chapter 5 of Gelman et al., 2014 [^2].)  The story is that 8 different schools experimented with an SAT coaching experiment.  The performance gains of the coached students were compared to students on a weight list control.  Separate estimates were obtained for each school, but because the size of the schools differed, the standard errors differed as well.
+
+Here are the data:
+```{r data}
+Schools <- data.frame(row.names=c("A","B","C","D","E","F","G","H"),
+                      effect = c(28.39,7.94,-2.75,6.82,-.64,.63,18.01,12.16),
+                      see = c(14.9, 10.2, 16.3, 11.0, 9.4, 11.4, 10.4, 17.6))
+
+Schools
+```
+Lets start by calculating a weighted average effect.  I'll weight each case by the precision (one over the square of the see).
+```{r grand mean}
+Schools$w <- 1/Schools$see^2
+Schools.mean <- sum(Schools$w*Schools$effect)/sum(Schools$w)
+Schools.mean
+```
+Here is a plot of the data.
+```{r data Plot}
+ord <- order(Schools$effect)
+plot(Schools$effect[ord[c(1,8)]]+c(-2,2)*Schools$see[ord[c(1,8)]],
+     c(nrow(Schools),1),main = "8 Schools data.",type="n",yaxt="n",
+     xlab="Effect Size",ylab="School")
+points(Schools$effect[ord],nrow(Schools):1,pch=rownames(Schools)[ord])
+segments(Schools$effect[ord]-2*Schools$see[ord],nrow(Schools):1,
+         Schools$effect[ord]+2*Schools$see[ord],nrow(Schools):1)
+abline(v=Schools.mean,col="blue")
+
+```
+
+## Unpooled, pooled and partially pooled estimates.
+
+The blue line in the figure above is the grand mean.  This is the totally pooled solution.  The letters are the unpooled estimates for the schools.  Now suppose that the effects for the schools come from a normal population with mean equal to the grand mean above, and a standard deviation of $\tau$ (Gelman and Hill, 2007[^3],  calls this $\sigma_\alpha$).  Let $\bar y$ be the grand mean, and let $\sigma_i$ be standard error for School $i$.  Then we get the following Bayesian posterior:
+$$ \widetilde\sigma_i^{2} = 1/(\tau^{-2} + \sigma_i^{-2})\;; \qquad
+\widetilde y_i = \frac{\tau^{-2} \bar y + \sigma_i^{-2} y_i}{\tilde\sigma_i^{-2}}\;.$$
+
+Lets look at this for various values of $\tau$.  For this purpose, the following function will be handy.  It will compute the posterior distribution for a given prior over the school means.
+```{r}
+Schools.post <- function (data, prior) {
+  V <-  1/data$see^2 + 1/prior["sd"]^2
+  theta <- (data$effect/data$see^2 + prior["mean"]/prior["sd"]^2)/V
+  data.frame(effect=theta,see=1/sqrt(V),row.names=rownames(data))
+}
+Schools.post(Schools,c(mean=Schools.mean,sd=Inf))
+
+```
+With infinite standard deviation in the prior, we recover the unpooled estimate.  With zero standard we get NaN, but with a value close to 0 we get the completely pooled estimate.
+
+## Senstivity to prior standard deviation
+
+Lets put a slider on $\tau$ so we can see going from the pooled to the unpooled estimate.
+
+```{r eruptions, echo=FALSE}
+inputPanel(
+  
+  sliderInput("tau", label = "School-level standard deviation:",
+              min = 0.02, max = 50, value = 10, step = 0.02)
+)
+
+renderPlot({
+  
+  dat <- Schools.post(Schools,c(mean=Schools.mean,sd=input$tau))
+  plot(Schools$effect[ord[c(1,8)]]+c(-2,2)*Schools$see[ord[c(1,8)]],
+     c(nrow(Schools),1),main = "8 Schools data.",type="n",yaxt="n",
+     xlab="Effect Size",ylab="School", sub=paste("Partial pooling, tau =",input$tau))
+points(dat$effect[ord],nrow(dat):1,pch=rownames(dat)[ord])
+segments(dat$effect[ord]-2*dat$see[ord],nrow(dat):1,
+         dat$effect[ord]+2*dat$see[ord],nrow(dat):1)
+abline(v=Schools.mean,col="blue")
+})
+```
+
+# The EM Algorithm
+
+So how do we get the right value for $\tau$, the high level standard deviation.  One way is to try to find a value of $\tau$ that maximizes the likelihood of the observed data.  We can do this using the EM algorithm.
+
+_EM_ stands for expectation--maximization.  In the EM algorithm, the unknown quatities are split into two pieces:  latent variables, $\theta$, and parameters, $\phi$.   In the example above, the school means are the latent variables, and the mean and standard deviation of the school mean distribution are the parameters.  Furthermore, we need to know the sufficient statistics for the latent variables, $S(\theta)$; for the 8 schools example, this is the expected value and standard deviation of the posterior distribution.  Start with an initial guess of the parameters values: $\phi^{(0)}$.  Now for each cycle, $r$, there are three steps:
+
+* **E-Step**:  Using the current version of the parameters, $\phi^{(r)}$, calculate the expected value of the sufficient statistics for the latent variables, $S(\theta)^{(r+1)} = E[S(\theta)|\phi^{(r)},{\bf X} ] $.
+
+* **M-Step**:  Find new parameter values, $\phi^{(r+1)}$ that maximize the likelihood (or posterior for Bayesian EM) of the data and sufficient statistics, $\phi^{(r+1)} = \textrm{argmax}_{\phi} P({\bf X},S(\theta)^{(r+1)}|\phi)$.
+
+* **Convergence Check**:  Stop if $||\phi^{(r+1)} - \phi^{(r)}|| < \epsilon$ or $r > r_{max}$.  (Alternately, the stopping criteria can be if the likelihood doesn't change).
+
+If the distance between the parameters gets sufficiently small before $r$ execeeds the maximum, then the EM algorithm is said to have converged.  If not, then it has instead gotten stuck.  Dempster, Laird and Rubin (1977)[^4] showed that this will eventually converge to a local maximum of the likelihood.
+
+A couple of problems.  First, if the likelihood (or posterior) has more than one local maximum, the EM algorithm can find the wrong one.  This is often the result of an underidentified problem, but it also can just be the case that there are more than one solution at the given parameterization.  Second, if the likelihood has a long flat place, the algorithm can move very slowly.
+
+## EM for the 8 Schools problem.
+
+Let $Y_i$ be the effect size for School $i$, and let $\sigma_i$ be the standard error.
+
+Let the latent variables be $\theta = \{\mu_1, \ldots, \mu_8\}$, the means for the 8 schools.  The sufficient statistics are the expected value, $M_i$ and the variances $V_i$.  
+
+The parameters are mean, $\xi$, and the standard devaition, $\tau$, of the school mean distribution.  
+
+### E-Step
+
+We will start with an arbitrary set of initial values:  $\xi=0$ and $\tau=\infty$.
+
+
+```{r echo=TRUE}
+#Calculates posterior means for each of the schools
+param0 <- c(mean=0,sd=Inf)
+
+Schools.EStep <- function (data, params) {
+  Pre <-  1/data$see^2 + 1/params["sd"]^2
+  M <- (data$effect/data$see^2 + params["mean"]/params["sd"]^2)/Pre
+  list(M=M,V=1/Pre)
+}
+
+lv0 <- Schools.EStep(Schools,param0)
+lv0
+```
+Note that except for some changes of notation, `Schools.Estep` is the same as `Schools.post` above.
+
+## M-Step
+
+We are rather fortunate in that the maixmization can be done in closed form.  In particular, the new value for $\xi$ is just the mean of $M_i$.  The variance is given by $\tau^2 = \textrm{Var}(M_i) + \sum V_i$.
+This gives us the following code.
+
+
+```{r echo=TRUE}
+Schools.MStep <- function (data, latentvars) {
+  J <- length(latentvars$M)
+  mu <- mean(latentvars$M)
+  sig <- sum((latentvars$M-mu)^2)/(J-1)+sum(latentvars$V)
+  c(mean=mu,sd=sqrt(sig))
+}
+
+Schools.MStep(Schools,lv0)
+
+```
+
+
+## The EM algorithm
+
+OK, Here is a general EM-algorithm function.  Note that the E-step and M-step are passed in as functions.  It also gives some options to print out the E-step and M-step results as we go.
+
+```{r echo=TRUE}
+EM <- function (data,initial.param,EStep,MStep,maxit=10L,tol=.001,
+                printParams=FALSE,printLatent=FALSE) {
+  param.hist <- matrix(NA,maxit,length(initial.param))
+  lv.hist <- vector("list",maxit-1L)
+  dimnames(param.hist) <- list(paste(1:maxit),names(initial.param))
+  param.hist[1,] <- param <- initial.param
+  if (printParams) cat("Initial Parameters",param,"\n")
+  converged <- FALSE
+  
+  for (i in 2:maxit) {
+    if (printParams || printLatent) cat("Iteration ",i-1,"\n")
+
+    latent <- do.call(EStep,list(data,param))
+    lv.hist[[i-1]] <- latent
+    if (printLatent) {
+		  cat("Latent variables:\n")
+         print(latent)
+         cat("\n")
+    }
+    
+    param.hist[i,] <- param <- do.call(MStep,list(data,latent))
+    if (printParams) cat("Parameters",param,"\n")
+
+    if (max(abs(param-param.hist[i-1,])) < tol) {
+      converged <- TRUE
+      cat("Converged at iteration ",i,"\n")
+      break
+    }
+  }
+  if (!converged) cat("Did not converge in",i,"iterations.\n")
+  list(param=param,latent=latent,param.hist=param.hist,lv.hist=lv.hist)
+}
+
+```
+Here is an example of the EM algorithm in action:
+
+```{r echo=TRUE}
+em.out <- EM(Schools,param0,Schools.EStep,Schools.MStep,printParams=TRUE)
+em.out$param
+em.out$latent$M
+```
+
+## Visualizing the EM algorithm.  
+
+Lets see if we can look at the output of the EM algorithm graphically.
+
+```{r}
+inputPanel(
+  
+  sliderInput("mu0", label="Starting School level mean",
+              min=-25,max=25,value=0,step=.25),
+  sliderInput("tau0", label = "Starting School-level standard deviation:",
+              min = 0.02, max = 100, value = 90, step = 0.02)
+)
+
+renderPlot({
+  
+  par0 <- c(mean=input$mu0,sd=input$tau0)
+  emout <- EM(Schools,par0,Schools.EStep,Schools.MStep)
+  NN <- sum(!is.na(emout$param.hist[,1]))
+  Mmat <- do.call(rbind,sapply(emout$lv.hist,function(x) x$M))
+  Mmat <- rbind(Mmat,NA)
+  colnames(Mmat) <- rownames(Schools)
+  layout(matrix(1:3,1,3),c(3,1,1))
+  matplot(Mmat,NN:1,type="b",pch=colnames(Mmat),main="School Means",
+          yaxt="n",xlab="Effect Size")
+  plot(emout$param.hist[1:NN,"mean"],NN:1,main="Grand Mean Effect",type="b",
+       yaxt="n",xlab="Effect Size")
+  plot(emout$param.hist[1:NN,"sd"],NN:1,main="Standard deviation of effect sizes",type="b",
+       yaxt="n",xlab="sd(Effect Size)")
+ 
+})
+```
+
+## EM in practice.
+
+In practice, we seldom need to implement the EM algorithm by hand.  Many of the easy cases are built into existing R functions, which often use the EM alogirthm to find maximum likelihood estimates under their hood.  However, understanding how it works can help diagnose problems with convergence.
+
+Another place that it is frequently seen is in the Marginal Maximum Likelihood (MML) algorithm used in Psychometrics.  Here the person ability latent variable is like the unknown school means.  The MML algorithm alternates between finding the parameters of the ability distribution (in some variants, just the mean and variance of the ability) and the values for the item parameters which maximize the likelihood.
+
+### References
+
+[^1]: Rubin, D. B. (1981).  Estimation in Parallel randomized experiments.  _Journal of Educational Statistics_, __6__, 377-401.
+
+[^2]: Gelman, A., Carlin, J. B., Stern, H. S., Dunson, D. B., Vehtari, A. and Rubin, D. B. (2014).  _Bayesian Data Analysis:  Third Edition_.  CRC Press.  (ISBN:  978-1-4398-4095-5)
+
+[^3]: Gelman, A. and Hill, J. (2007).  _Data Analysis Using Regression and Hierarchical/Multilevel Models._ Cambridge University Press.
+
+[^4]: Dempster, A. P. Laird, N. M. and Rubin, D. B. (1977).  Maximum likelihood from incomplete data via the EM algorithm (with discussion).  _Journal of the Royal Statistical Society,_ __39__, 1--38.

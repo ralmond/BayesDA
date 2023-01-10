@@ -1,0 +1,98 @@
+---
+title: "Multiple Raters in Stan"
+output: html_notebook
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(nlme)
+library(rstan)
+library(shinystan)
+
+```
+
+_Models for adjusting individual ratings:  a committee of 10 persons is evaluating 100 job applicants.  Each person on the committee reads 30 applications (structured so that each application is read by 3 people) and gives a numerical rating between 1 and 10._
+
+_(a) It would be nautal to rate the applications based on their combined scores; however, there is aworry that different raters use different standards (severity) and we would like to correct for this.  Set up a model for the ratings (with parameters for the applicants and the raters)._
+
+```{r data setup}
+I <- 100L # applicants
+J <- 10L  # raters
+W <- 3L   # ratings per applicant
+
+#assignments <- read.csv("assignment.csv")
+ratings <- read.csv("Bayesian/ratings.csv")
+
+```
+
+```{stan output.var="ratings.stan"}
+data {
+  int<lower=0> I; //Number of applicants
+  int<lower=0> J; //Number of raters
+  int<lower=0> W; //Ratings per applicant
+  
+  int<lower=0,upper=I> applicant[I*W];
+  int<lower=0,upper=J> rater[I*W];
+  real<lower=1,upper=10> rating[I*W];
+
+}
+parameters {
+
+  real<lower=1,upper=10> ability[I];
+  real severity[J];
+  
+  //Variance parameters
+  real<lower=0> sigma; //rating level SD
+  real<lower=0> tau; //rater level SD
+}
+transformed parameters {
+  real expRating[I*W];
+  for (i in 1:(I*W)) 
+    expRating[i] = ability[applicant[i]] + severity[rater[i]];
+    
+}
+model {
+  // Ability and severity
+  ability ~ uniform(1,10);
+  severity ~ normal(0,tau);
+  
+  // Data probability (likelihood)
+  rating ~ normal(expRating,sigma);
+  
+  // Priors for sigma and tau
+  
+
+}
+
+```
+
+## Next step is to prep the data
+
+Put it all into one big list.  Make sure the names match the names in the data block.
+
+```{r data object}
+ratings.data <- list(
+  I = I, J=J, W=W,
+  applicant = ratings$applicant,
+  rater=ratings$rater,
+  rating=ratings$rating
+)
+
+
+```
+## Now Run Stan
+
+```{r run stan, echo=TRUE}
+options(mc.cores = 5)
+ratings.fit1 <- sampling(
+  ratings.stan,       # The model
+  data = ratings.data, # The data
+  chains = 5,
+  warmup = 1000,
+  iter = 2000,
+  refresh=1000        # Show progress
+)
+summary(ratings.fit1)
+```
+```{r shinystan}
+ratings.fit1s <-launch_shinystan(ratings.fit1)
+```

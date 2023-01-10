@@ -1,0 +1,48 @@
+---
+title: "Normal Normal Bayesian Model"
+author: "Russell Almond"
+date: "September 1, 2020"
+output: html_document
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(shiny)
+```
+
+```{r normalnormal, echo=FALSE}
+inputPanel(
+  sliderInput("mn", label = "Prior Mean:",
+              min=0, max=100, value=50, step=1),
+  
+  sliderInput("eta", label = "Prior Standard Deviation:",
+              min = 0.2, max = 25, value = 10, step = 0.1),
+  sliderInput("X", label="Sample mean:",
+               min=0, max=100, value=50, step=1),
+  sliderInput("sigma", label="Standard error of Mean:",
+        min = 0.2, max = 25, value = 10, step = 0.1)
+  
+  
+)
+p("Posterior Mean =",textOutput("mean"),
+  "  Posterior SD =", textOutput("sd"))
+renderPlot({
+  mn0 <- as.numeric(input$mn)
+  tau0 <- 1/as.numeric(input$eta)^2
+  omega <- 1/as.numeric(input$sigma)^2
+  X1 <- as.numeric(input$X)
+  curve(dnorm(x,mn0,1/sqrt(tau0)),xlim=c(0,100),ylim=c(0,.1),
+        main=paste("Normal prior and poster distributions."),
+        xlab="X",ylab="Density")
+  tau1 <- tau0 + omega  ## Eq 9.4 in Gellman, Hill, Vehtari (2020)
+  mn1 <-tau0/tau1*mn0 + omega/tau1*X1 # 9.3
+  curve(dnorm(x,mn1,1/sqrt(tau1)), lty=4,col="blue", add=TRUE)
+  abline(v=mn0)
+  abline(v=X1,lty=2,col="skyblue")
+  abline(v=mn1,lty=4,col="blue")
+  output$mean <- renderText(mn1)
+  output$sd <- renderText(round(1/sqrt(tau1),2))
+})
+```
+

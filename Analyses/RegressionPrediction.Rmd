@@ -1,0 +1,194 @@
+---
+title: "Regression Prediction Error"
+author: "Russell Almond"
+date: "9/22/2020"
+output: html_document
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(shiny)
+library(rstanarm)
+```
+
+## The Cars Data Set
+
+We will work with an example data set from Ezekiel (1930) which provides information about the speed of a number of cars and the stopping distance in feet.
+
+```{r}
+help(cars)
+summary(cars)
+```
+
+Lets take a quick look at these data.
+
+
+```{r}
+plot(dist~speed,data=cars,xlab="Speed (mph)", ylab="Stopping Distance (ft)")
+abline(lm(dist~speed,data=cars))
+lines(lowess(cars),col=2,lty=2)
+```
+
+The solid black line is the least squares regression line, or basic model.
+
+The dashed red line is a lowess curve fit to the same date.  
+
+* There may be a little bit of a curve here, but it is hard to see.
+
+We will go ahead and fit a regression using least squares.  (This the the `lm` or linear model function in R.)
+```{r fit}
+cars.fit <- lm (dist~speed,data=cars)
+print(cars.fit)
+```
+
+The method of least squares or maximum likelihood (which in the case of simple regression are the same) finds the single best fitting line.
+
+* _Least Squares_ means the line has the smallest some of squared residuals.
+
+* _Maximum Likelihood_ means that these are the parameters (slope and intercept) that have the highest probability of generating the target data.
+
+## Lots of different regression lines
+
+I'll try the regression using a different method (Markov Chain Monte Carlo, or MCMC).  In this method we sample 4000 different plausible sets of parameters that could have given rise to the data.  (These are sampled with a probability proportional to how likely they are to have generated the observed data).  
+
+The printed summary shows the median of the 4000 samples.  It should be close to, but not exactly the same as, the least squares/maximum likelihood estimate.
+
+
+```{r}
+#library(rstanarm)  ## Called above
+cars.mcmc <- stan_glm(dist~speed,data=cars,refresh=0)
+cars.coef <- as.matrix(cars.mcmc$stanfit)
+print(cars.mcmc)
+```
+
+## Mean Confidence Interval
+
+The MCMC approach is useful because it helps us remember that the estimates that are produced by the [least squares] regression are not the truth, but rather just the most likely set of parameters.  There are other possibilities that are nearly as likely.
+
+The next graph is designed to show this.
+
+The first N (you can adjust using the slider) samples from the MCMC are plotted as gray lines.  
+
+The least squares line is plotted in black.
+
+
+```{r meanInterval, echo=FALSE}
+inputPanel(
+  selectInput("alpha", label = "Confidence Level:",
+              choices = c(50, 68, 90, 95, 99), selected = 95),
+  
+  sliderInput("N", label = "Number of plausible values to plot",
+              min = 5, max = 50, value = 10, step = 1)
+)
+
+renderPlot({
+  plot(dist~speed,data=cars,type="n",xlab="Speed (mph)",   ylab="Stopping Distance (ft)")
+  NN <- as.integer(input$N)
+ for (n in 1:NN) {
+  abline(a=cars.coef[n,1],b=cars.coef[n,2],col="gray")
+  }
+  abline(cars.fit)
+  points(cars$speed,cars$dist)
+  pred <- predict(cars.fit,data.frame(speed=1:25),interval="confidence",level=as.numeric(input$alpha)/100)
+ lines(1:25,pred[,"upr"],lty=2)
+ lines(1:25,pred[,"lwr"],lty=2)
+})
+
+```
+
+Note the dashed curves surrounding the regression line.  
+
+These are the confidence interval for the regression line.
+
+The _level_ of the confidence interval is how many of these plausible regression lines should fit between the dashed curves (expressed as a percentage).  
+
+SPSS calls this the "mean" prediction interval.  R calls it the "confidence" interval.
+
+You can use the graph (or the R `predict` function, or the prediction option in SPSS) to get a prediction for the **average** (over a number of trials) stopping time at a given speed.
+
+## Individual Prediction Interval
+
+The mean confidence interval above is for the **average** over many attempts at stopping the car.
+
+We don't expect a single attempt to fall exactly on the line.  
+
+* 68% of the time we expect to be one standard error above or below the line.
+
+* 95% of the time we expect to be two standard errors above or below the line.
+
+* To get the total error, we need to add
+  + The error in the regression line (see above)
+  + The error around the regression line.
+  
+(Actually, we add these on the squared variance scale).
+
+The picture below shows the individual prediction interval.  Once again, you can pick your confidence level.
+
+SPSS calls this the _individual_ prediction interval.  R calls it the _prediction_ interval.
+
+```{r predInterval, echo=FALSE}
+inputPanel(
+  selectInput("alpha1", label = "Confidence Level:",
+              choices = c(50, 68, 90, 95, 99), selected = 95))
+  
+renderPlot({
+  plot(dist~speed,data=cars,type="n",xlab="Speed (mph)",   ylab="Stopping Distance (ft)",ylim=c(-25,150))
+ pred1 <- predict(cars.fit,data.frame(speed=1:25),interval="prediction",level=as.numeric(input$alpha1)/100)
+ # Color the negative predictions.
+ crossi <- max(which(pred1[,"lwr"]<0))
+ crossl <- pred1[crossi+1,"lwr"] -pred1[crossi,"lwr"]
+ crossx <- -pred1[crossi,"lwr"]/crossl
+ polygon(c(1,1:crossi,crossx),c(0,pred1[1:crossi,"lwr"],0),col="cyan")
+  abline(h=0)
+  abline(cars.fit)
+  points(cars$speed,cars$dist)
+ lines(1:25,pred1[,"upr"],lty=2)
+ lines(1:25,pred1[,"lwr"],lty=2)
+})
+
+
+
+
+```
+
+Look at the area in the graph which is colored cyan.
+
+These are predictions that the car will stop in _negative_ distance.  **Impossible!**
+
+The model is wrong.  
+
+That shouldn't worry us, models are always wrong.  The just might be close enough to be right to be useful.
+
+We might say that the linear model is useful, but only if the car is going 5 mph or more.  
+
+## Model Checking
+
+Note that there was a slight curve in the lowess line in the scatterplot at the top of this analysis.  
+
+Sometimes the curve is easier to see if we take the linear trend out.
+
+We can do this by plotting the residuals versus the fitted values.
+
+![Dangerous Bend](dangerousBend.png)  In a simple regression, this is the same as plotting against $X$, as the fitted values are just a linear transformation of $X$ (and the graph will just be rescaled to fit).  For multiple regression, the fitted values are a mix of all the $X$ values, so this plot is a useful summary.
+
+
+```{r residualPlot, echo=FALSE}
+plot(fitted(cars.fit),residuals(cars.fit))
+abline(h=0)
+lines(lowess(fitted(cars.fit),residuals(cars.fit)),lty=2,col="red")
+```
+
+Looking a little more closely, we can see the curve.  
+
+It would be easy to miss without the lowess line, but the lowess line points it out to us.
+
+There is a little bit of curvature, curving up at the lower distances, keeping the stopping distances in positive territory.
+
+So what to conclude?
+
+* In the range of 5 mph -- 25 mph the linear model looks pretty good.
+
+* For low speeds, we need a better model.
+
+* Maybe we need a better model for higher speeds as well.

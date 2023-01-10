@@ -2,3 +2,326 @@
 title: "Bayesian Statistics Introduction"
 format: revealjs
 ---
+
+# Bayesian Data Analysis
+
+**EDF 5404: Bayesian Data Analysis**
+
+## Rumor: Santa is Frequentist
+
+![PhD Comics 1457](http://www.phdcomics.com/comics/archive/phd121911s.gif)
+
+Image Credit: <http://www.phdcomics.com/comics.php?f=1457>
+
+## Who Am I?
+
+![Russell Almond](img/RGASanta.jpg)
+
+[Russell]{.underline} Almond (thee, thou)
+
+## How to find me
+
+-   <http://ralmond.net/>
+-   Email: [ralmond\@fsu.edu](mailto:ralmond@fsu.edu){.email}
+-   Office Hours, By appointment [appointment link](https://doodle.com/mm/russellalmond/book-a-time)
+-   Zoom: <https://fsu.zoom.us/my/ralmond>
+-   Coffee Hour: TTh 11:15--12:00
+-   Tea Time, TTH 4:30--5:00
+-   STB 3204-J
+-   Has ADHD
+
+Questions welcome during lectures (speak up if on Zoom)
+
+## Textbook
+
+![Textbook](https://covers.elsevier.com/200/9780124058880.jpg)
+
+Kruchke, John (2014). *Doing Bayesian Data Analysis.* Elsevier Sicence and Technology. ISBN 978-0-12-405888-0.
+
+## Other Texts
+
+-   Gelman, A., Carlin, J. B., Stern, H. S. & Rubin, D. B. (1995/2003). *Bayesian data analysis.* Chapman and Hall.
+
+    -   Good reference on Bayesian statistics
+
+-   Brooks, S., Gelman, A, Jones G. L., Meng, X-L (2011). *Handbook of Markov Chain Monte Carlo.* CRC Press.
+
+    -   Paper Collection on MCMC
+
+-   Gilks, W.; Richardson, S. & Spiegelhalter, D. (ed.) (1995) *Markov Chain Monte Carlo in Practice* (Interdisciplinary Statistics) Chapman & Hall/CRC .
+
+    -   Paper collection on MCMC
+
+    -   First couple of chapters are useful intro references
+
+Liu, J. S. (2002). *Monte Carlo strategies in scientific computing.* Springer.
+
+-   Covers more exotic strategies (e.g., Importance Sampling, Particle Filter, more exotic MCMC).
+
+## Additional Readings
+
+Andy Gelman's Blog: <https://andrewgelman.com>
+
+## Software
+
+Will do most work through Posit Studio:
+
+https://posit.cloud/spaces/323676/join?access_code=-cWB4jXG0_PEIPItmrQWUzfsYsW4GZhTToU-Ork0
+
+Free Student Account.
+
+Other Tools:
+
+-   R <https://www.r-project.org>
+-   Stan [https://mc-](https://mcmc-stan.org){.uri}[stan](https://mc-stan.org){.uri}[.org](https://mcmc-stan.org){.uri}
+-   JAGS <https://sourceforge.net/projects/mcmc-jags/>
+
+## Class Project
+
+Part 1 (Due by Spring Break).
+
+Pick a data set and do a "classical" analysis.
+
+Part 2 (Due by End of Semester)
+
+Fit a Bayesian model to those data.
+
+## How's My Teaching?
+
+Dial: 644-5203
+
+Email: [ralmond\@fsu.edu](mailto:ralmond@fsu.edu){.email}
+
+-   👍 Speed Up
+
+-   👎 Slow Down
+
+-   🖐️ I have a question
+
+People on Zoom, feel free to unmute and ask questions.
+
+Post on Discussion Forum
+
+Come to coffee hours & online reviews.
+
+Let me know if you have problems reading material
+
+-   Problems distinguishing black and red
+-   Let me know if you need better closed captions on videos
+
+## What to do if you are lost
+
+Confusion is a part of learning
+
+-   But it should be temporary
+
+*Post questions in class forums!*
+
+*Come to Tea and Coffee Hours*
+
+*Make an appointment*
+
+Be specific about what is confusing you
+
+# An Introduction to Bayesian Thinking
+
+## Quiz 1
+
+A person takes an aptitude test that has an SEM of 5, and gets a score of 80. The test scores are approximately normally distributed in the population of interest.
+
+Confidence Interval:\
+$$ 80 \pm 2\cdot 5 = (70, 90)$$
+
+Use the classical Neyman-Pearson definition of a confidence interval, which is larger?
+
+A)  The probability that the person't true aptitute is between 70 and 90
+B)  95 %
+C)  A and B are about the same.
+D)  Can't tell from the information provided.
+
+## Parameters
+
+-   In the Neyman-Pearson framework, parameters are fixed but unknown.
+
+-   All of the probability comes from the construction of the interval.
+
+-   The classical confidence interval provides a mathematically precise answer to the wrong question.
+
+## Fiducial Inference
+
+R.A. Fisher's, seldom used
+
+$$ X = T + e $$
+
+$$ e \sim N(0,5) $$
+
+$e$ is a *pivotal variable*
+
+$$ X=80; \qquad T \sim N(80, 5) $$
+
+## Problems with Fiducial Inference
+
+-   Pivotal variables come with rather strong distributional assumptions
+
+-   Requires custom model for each problem (These problems are common with Bayesian statistics)
+
+-   Fiducial model for Binomial produces upper/lower probability bounds, not probability (Dempster, 1966).
+
+## Bayesian Solution
+
+-   Parameters are random variables
+
+-   Complete Bayesian model:
+
+    -   Everything is fixed and known or has a specified probability distribution
+
+-   *a priori* (before seeing data) distribution
+
+-   Distribution of data given parameters is *likelihood*
+
+-   *a posteriori* (prior + likelihood) distribution calculated using Bayes theorem
+
+## Example
+
+-   $X$ -- score on test
+-   $\theta$ -- ability (true score)
+-   Prior (population distribution) $$ \theta \sim N(70,10) $$
+-   Likelihood $$ X| \theta \sim N(\theta,5) $$
+
+## Posterior
+
+-   Generally, denominator of Bayes rule is a messy integral.
+
+-   Conjugate (normal-normal) case, posterior is also normal.
+
+-   Posterior precision: Sum the precisions ($1/s^2$)
+
+$$ \left ( \frac{1}{10} \right)^2 + \left ( \frac{1}{5} \right )^2 = .01 + .04 = .05 $$
+
+-   Posterior Mean: Weighted average of prior and likelihood
+
+$$ \frac{.01}{.05} 70 + \frac{.04}{.05} 80 = 78 $$
+
+## Shrinkage Estimator
+
+-   Shrink data estimate towards population mean
+
+-   Biased, but has lower m.s.e. than MLE
+
+-   Bayesian probabilities are a state of information
+
+    -   Prior: contains only population information
+    -   Likelihood: Information from data
+    -   Posterior: combined estimate
+    -   Weighting is by precision
+
+## Credibility Interval
+
+-   Pick a level $\alpha$
+
+-   Find $\alpha/2$ and $1-\alpha/2$ quantiles of posterior
+
+-   Posterior mean $\pm z_{1-\alpha/2} \cdot$ posterior sd
+
+-   $ 78 \pm 2*4.5$ (95% c.i.)
+
+-   Really is a 95% chance $\theta$ is between 69 and 87.
+
+## Problems with Bayesian Statistics
+
+-   Resistance to idea of subjective probabilities
+
+-   Where do priors come from?
+
+    -   Producing realistic priors is hard work
+
+    -   Rev. Bayes never published his paper because he had difficulty with his *a priori* assumption
+
+-   In general Bayes theorem creates very difficult high dimensional integrals
+
+    -   EM: Finding maximum *a posteriori* (MAP) point does not require integral
+
+    -   MCMC: Simulate from posterior and then do Monte Carlo integration
+
+## MLE and Flat Priors
+
+-   MAP and MLE estimates are similar
+
+-   If prior is uniform, MAP and MLE are the same.
+
+-   Flat normal prior 
+$$ \theta \sim N(0,\infty) $$
+
+    -   Limit of normal distribution as variance goes to infinity.
+
+$$ \theta|X \sim N(80,5) $$
+
+## Proper priors prevent problems
+
+* Instead of the classical test theory model, assume we have an IRT model
+
+* If the person gets all items right the MLE is positive infinity
+
+* If the person gets all items wrong the MLE is negative infinity
+
+* If you have a proper prior, then MAP is shrunk towards prior (population) mean
+
+## Quiz 2
+
+Assume we are doing a typical $t$-test using the classical Neyman-Pearson framework, and get the result $t(30)=5.1$
+
+Which is larger
+
+A. Pr(difference of means = 0)
+B. 5%
+C. A and B are about the same
+D. Can't tell
+
+## Bayesian versus Classical Hypothesis Testing
+
+* No real analog of classical hypothesis test
+
+* Setup two models:
+
+  - $M_0$:  difference of means is "around zero"
+  - $M_1$:  difference of means is "different from zero"
+
+* Can then look at Bayes Factor (ratio of likelihoods) and pick one over the other
+
+## Don Rubin's Bayesian Rationale
+
+* "I'm a Bayesian because I want my tests and confidence intervals to be well calibrated."
+
+  - C.I.s have correct coverage probability.
+  
+  - Tests have right level & power
+  
+* Bayesian rule of treating unknown quantities as random variables is easier than propagating standard errors.
+
+## Regression
+
+* Consider prediction interval for point from a regression model.
+
+* Two sources of error:
+
+  - Error estimating parameters
+
+  - Residual distribution of points around regression line
+
+* In Bayesian calculations parameters are random variables and add to random distribution of points around line
+
+## Missing Data/Multiple Imputations
+
+* Data are missing, but we have likelihood which shows relationship between missing data and parameters
+
+* Can draw a plausible value (imputation) for missing value from that distribution, but that doesn’t model our uncertainty about the missing value
+
+* Drawing multiple plausible values (imputations) for missing values from that distribution does model our uncertainty
+
+## Bottom Line
+
+* Principled approach to inference:  everything is known or a random variable
+
+* Probability as state of knowledge interpretation is more flexible than probability as frequency interpretation
+
+* Solving large, complex problems is easier:  if only we can solve the integrals

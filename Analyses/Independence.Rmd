@@ -1,0 +1,117 @@
+---
+title: "Independence"
+author: "Russell Almond"
+date: "10/5/2020"
+output: html_document
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(shiny)
+```
+
+Imagine a population which is split into two groups:  $A$ and $B$.  We select 100 people at random and ask them a question, which has two answers `yes` and `no`.  Define the following quantities:
+
+* $N_{Ay}$  The number of people from Group $A$ who answered `yes`.
+
+* $N_{An}$  The number of people from Group $A$ who answered `no`.
+
+* $N_{By}$  The number of people from Group $B$ who answered `yes`.
+
+* $N_{Bn}$  The number of people from Group $B$ who answered `no`.
+
+Define the following values (row and column totals):
+
+* $N_{A+}=N_{Ay}+N_{An}$  The number of people from Group $A$.
+
+* $N_{B+}=N_{By}+N_{Bn}$  The number of people from Group $B$
+
+* $N_{+y}=N_{Ay}+N_{By}$  The number of people who answered `yes`.
+
+* $N_{+n}=N_{An}+N_{Bn}$  The number of people who answered `no`.
+
+* $N=N_{A+}+N_{B+} = N_{+y} + N_{+n}$ The total number of people in the sample.
+
+Dividing any of those numbers by $N_{xx}$ produces a corresponding proportion $P_{xx}$ (which can be interpreted as a probability or proportion.
+
+Suppose group membership and the answer to the question are statistically indepedent.  In the diagram below, adjust $P_{A+}$ and $P_{+y}$ to make a two-by-two table:
+
+```{r independent, echo=FALSE}
+N <- 100
+inputPanel(
+  sliderInput("pa", label = "P(Member of Group A)",
+              min = 0, max = 1, value = .5, step = 0.05),
+  sliderInput("py", label = "P(Answered `yes`)",
+              min = 0, max = 1, value = .5, step = 0.05)
+)
+
+tabi <- reactive(
+  matrix(N*c(input$pa*input$py,
+           input$pa*(1-input$py),
+           (1-input$pa)*input$py,
+           (1-input$pa)*(1-input$py)),2,2,
+         byrow=TRUE,
+         dimnames=list(Group=c("A","B"),Answer=c("y","n")))
+)
+renderTable(tabi(),rownames=TRUE, digits=1)
+renderPlot(mosaicplot(tabi()),color=TRUE,main="Independent data")
+```
+
+
+There are two things you should notice about the independent data.
+
+* The proportion of `yes` and `no` answers in group A and B are always the same:  $N_{Ay}/N_{A+} = N_{By}/N_{B+} = N_{+y}/N$
+
+* The proportion of people in both Groups $A$ and $B$ are the same for people who answered both `yes`  and `no`:  $N_{Ay}/N_{+y} = N_{An}/N_{+n} = N_{A+}/N$
+
+We could say that the row and column proportions are always the same.
+
+Another way to think about this is to say:
+* If we learned which group a person belongs to, that would not change the probability of their answer.
+* If we learned how a person answered, that would not change the probablity of their group.
+
+## Dependent
+
+To make the table dependence, we need to add another parameter to the model to specify the degree of dependence.  
+
+For a two-by-two table, the odds ratio is as fairly easy to understand choice:
+$$ OR = \frac{P_{Ay}/P_{An}}{P_{By}/P_{Bn}}$$
+When group and answer are indpendent the cross product ratio should be 1.  
+
+If Group $A$ is more likely to answer `yes`, then the ratio should be bigger than 1.  
+
+If Group $B$ is more likely to answer `yes`, then the ratio should be less than one.
+
+```{r dependent, echo=FALSE}
+N <- 100
+inputPanel(
+  sliderInput("pad", label = "P(Member of Group A)",
+              min = 0, max = 1, value = .5, step = 0.05),
+  sliderInput("pyd", label = "P(Answered `yes`)",
+              min = 0, max = 1, value = .5, step = 0.05),
+  selectInput("OR",label="Odds Ratio",
+              choices=c("1/4","1/3","1/2","2/3","1","3/2","2","3","4"), selected ="1")
+)
+
+tabd <- reactive({
+  pa <-input$pad
+  py <-input$pyd
+  OR <- eval(str2lang(input$OR))
+  cat(pa,py,OR,"\n")
+  if (OR == 1) {
+    pay <- pa*py
+  } else {
+    S <- sqrt((1+(pa+py)*(OR-1))^2 + 4*OR*(1-OR)*pa*py)
+    cat(S,"\n")
+    pay <- (1+(pa+py)*(OR-1)-S)/2/(OR-1)
+    cat(pay,"\n")
+  }
+  matrix(N*c(pay,(pa-pay),(py-pay),(1-py-pa+pay)),
+        2,2, byrow=TRUE,
+        dimnames=list(Group=c("A","B"),Answer=c("y","n")))
+})
+renderTable(tabd(),rownames=TRUE, digits=1)
+renderPlot(mosaicplot(tabd()),color=TRUE,main="Dependent data")
+```
+

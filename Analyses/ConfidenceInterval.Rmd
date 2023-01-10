@@ -1,0 +1,190 @@
+---
+title: "Confidence Intervals"
+author: "Russell Almond"
+date: "3/5/2019"
+output: html_document
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Confidence Intervals
+
+The simple heuristic for the confidence interval is that if we take a sample and calculate an estimator and a standard error for that estimator; 95% of the time the estimand will be within 2 standard errors of the estimate.  This heuristic works best for sample means, because by the central limit theorem the distribution of the sample mean will be approximately normal.  It also works fairly well for other statistics, like regression slopes.  
+
+Let the goal be to produce an interval which $(1-\alpha)$% of the time captures the estimand.  If we assume that the estimate, $\widetilde{f(Y)}$, is approximately normally distributed with a mean of the estimand, $f(Y)$ and a standard deviation of the standard error of the estimate, $\sigma_{\widetilde{f(Y)}}$, (i.e., we are assuming that central limit theorem holds at least approximately for $\widetilde{f(Y)}$), then we can produce a confidence interval using the following expression:
+$$ \widetilde{f(Y)} \pm z_{1-\alpha/2}\ \sigma_{\widetilde{f(Y)}}\; .$$
+
+Ugh.  Lets break this apart using an example.  Let's say what we are interested in is the sample mean.  Then $\widetilde{f(Y)} = \bar Y$ is just the sample mean.  The quantile $z_{1-\alpha/2}$ depends on the desired accuracy.  The default choice is $1-\alpha=.95$, so $1-\alpha/2 = .975$, and looking this up on the normal table $z_{.975}\approx 1.96 \approx 2$.  Finally, $\sigma_{\widetilde{f(Y)}}$ is the standard error of the mean, so if the population standard deviation of $Y$ is $\sigma_Y$ and the sample size is $N$, then $\sigma_{\widetilde{f(Y)}} = \sigma_Y/\sqrt{N}$.  This gives us the slightly easier to look at:
+$$\bar Y \pm 1.96 \sigma_Y/\sqrt{N} \approx \bar Y \pm 2 \sigma_Y/\sqrt{N}\ ;$$
+Note that we are assuming that $\sigma_Y$ is known here.  If we need to estimate it from the data, we need a slightly different formula given later.
+
+## Catching Fish in Our Net
+
+There are two interpretations of confidence intervals (c.i.s):  classical and Bayesian (although the latter are often called _credibility intervals_ to distinguish them).  As the Bayesian interpretation requires fewer assumptions, we will explore it first.  
+
+In the classical interpretation the c.i., the c.i. is like a net that is cast into the sea.  It either will or will not catch the fish (the estimand).  On average, the c.i. will catch the fish $(1-\alpha)$% of the time;  this probability comes from the sampling.  On a given time, we either will or will not have the fish in the net, but if we through it out many times, we will catch the fish $(1-\alpha)$% of the time.
+
+
+
+## Random Points
+
+Select the number of repetitions (how many times we through the net), the sample size (the size of the net) as well as the parameters of the population.
+
+You may need to press the regenerate button to get the graph to have the right symbols.
+
+```{r Controls, echo=FALSE}
+inputPanel(
+    selectInput("M", label = "Number of Repetitions:",
+                choices = c(50, 100, 200), selected = 100),
+    selectInput("N", label = "Sample Size:",
+                choices = c(1,5,10,25,50,100), selected = 1),
+    sliderInput("my", label = "Mean of Y:",
+              min=0, max=100, value=50, step=1),
+    sliderInput("sy", label = "Standard Deviation of Y:",
+              min = 0.2, max = 25, value = 10, step = 0.1),
+    actionButton("go",label="(Re)Generate"))
+
+Z <- rnorm(100)
+p1 <- floor(abs(Z)) +1
+dataSet <- reactiveValues(Z=Z,sem=10,
+                          pch=ifelse(p1 >2, 5, p1), 
+                          M=100,
+                          my=50,sy=10)
+  
+observeEvent(input$go,{
+      M <- as.numeric(input$M)
+      dataSet$Z <- rnorm(M)
+      sy <- as.numeric(input$sy)
+      dataSet$sem <- sy / sqrt(as.numeric(input$N))
+      p1 <-floor(abs(dataSet$Z)) + 1
+      dataSet$pch <- ifelse(p1 > 2, 5, p1)
+      my <- as.numeric(input$my)
+})
+
+renderPlot({
+      sem <- dataSet$sem
+      my <- dataSet$my
+      sy <- dataSet$sy
+      X <- dataSet$Z * sem + my
+      M <- length(X)
+      curve(
+        dnorm(x, my, sem),
+        xlim = c(my - 3.5 * sy, 
+                 my + 3.5 * sy),
+        ylab = "density",
+        xlab = "Sample Mean"
+      )
+      abline(v = my)
+      abline(h = 0)
+      text(my + .25 * sem, .02, expression(mu[Y]))
+      abline(v = my - 2 * sem)
+      text(my - 2 * sem + .25 * sem, 0.0025, "-2SE")
+      abline(v = my - sem)
+      text(my - sem + .25 * sem, 0.005,"-1SE")
+      abline(v = my + sem)
+      text(my + sem + .25 * sem, 0.005, "+1SE")
+      abline(v = my + 2 * sem)
+      text(my + 2 * sem + .25 * sy, 0.0025, "2SE")
+      points(X, rep(0, M), pch = dataSet$pch)
+    })
+   renderText({
+     sem <- dataSet$sem
+     pch <- dataSet$pch
+      paste(
+        "Standard Error = ",
+        round(sem, 3),
+        ":\n",
+        sum(pch == 1),
+        "Estimates less than 1 SE from mean;\n",
+        sum(pch == 2),
+        "Estimates between 1 and 2 SE from mean;\n",
+        sum(pch == 5),
+        "Estimates more than 2 SE from mean.\n"
+      )
+   })
+
+
+```
+
+
+
+* Approximaly 2/3 of the data points should be within 1 SE of the mean (plotted as circles)
+
+* Approximately 95 percent of the data points should be within 1 SE of the mean (circles and triangles).
+
+* Approximately 5 percent of the data points should be 2 SEs or more away from the mean (plotted at diamonds).
+
+
+Note that changing the mean and sd of the population only changes the scales on the graph, not the structure of the problem.
+
+## Random Intervals
+
+Taking the sample mean and going plus or minus two standard errors produces a confidence interval.
+
+Actually, the two standard error rule is based on looking up the .975 (1-.05/2) point on the [normal table](NormalCalculator.Rmd).  We could put other values in there as well (50%, 75%, 90% and 99% are common choices).  This will adjust the length of the slider.
+
+
+```{r RandomIntervals, echo=FALSE}
+inputPanel(sliderInput("alpha","Confidence",
+                       min=0,max=1,value=.95,step=.01))
+renderPlot({
+      sem <- dataSet$sem
+      my <- dataSet$my
+      X <- dataSet$Z * sem + my
+      M <- length(X)
+      i <- 1:M
+      alpha <- (1-as.numeric(input$alpha))/2
+      X.low <- X +qnorm(alpha)*sem
+      X.high <- X + qnorm(1-alpha)*sem
+      pch1 <- ifelse(X.low <= my & my <= X.high,1,5)
+      plot(c(my-3.5*sem,my+3.5*sem),c(0,M+1),
+             ylab="Trial",xlab="Sample Mean",
+           main=paste(100*(1-2*alpha),"% Confidence Intervals"), type="n")
+      points(X,i,pch=pch1)
+      segments(X.low,i,X.high,i,lty=pch1,
+               col=ifelse(pch1==5,1,5))
+      abline(v = my)
+    })
+
+
+```
+
+The number of confidence intervals that don't overlap the target line should be around $\alpha$ (the number in the slider) of the total number of intervals.
+
+* This graph and the random points above are based on the same data.  For the 95% interval; the data points where the intervals don't cross correspond to the data points outside of the 95% region.
+
+## Interpreting Confidence Intervals
+
+The number $\alpha$, most often 95%, is known as the _level_ of the confidence interval.  The level is interpreted as a probability, but there are two schools of thought for interpreting it.
+
+### Classical Approach
+
+The classical statistical paradigm regards the population mean as a fixed but unknown quantity.  The true value is either in or not in the interval, we don't know which.  
+
+Random variability comes from the sampling, therefore the 95% comes from imagining different worlds in which we repeated the same sampling and analysis over and over again.  95% of the time, our net (the interval) will catch the fish.
+
+In the classical paradigm, we can't say that their is a 95% chance that the fish is in the net, as we can't express the position of the fish as a probability:  only the position of the net.
+
+### Bayesian Approach
+
+The Bayesian paradigm makes the position of the fish a random variable.  To do that, however, it needs an additional assumption:  a probability distribution for the initial position of the fish.
+
+For simplicity, assume that all positions of the fish are [equally likely][^1].  Using that assumption and Bayes's Theorem, calculate the posterior probability of the fish (after observing the data).  The interval that is constructed is called a _credibility interval._  There is a 95% chance that the fish is in the credibility interval (at least if the model, both the prior assumption and the normal distribution of the data is correct).
+
+### Which approach is better
+
+Actually, most people want both interpretations to hold.  They want a proceedure that catches the fish 95% of the time and they want the fish to be in the net 95% of the time.
+
+Fortunately, when we use the approximation that all positions of the fish are equally likely, the two intervals are the same.  The abbreviation _c.i._ could stand for either confidence or credibility interval.  
+
+The Bayesian interpretation relies on an additional assumption, but both intervals rely on assumptions about the distribution of the observed data.  In particular, in this example, we are using the normal distribution to calculate the intervals.  That means that the distribution must be close enough to normal that by the central limit theorem, it is reasonable to think that the mean is approximately normally distributed.
+
+Both c.i.s break down if the there is a problem with the sample.  If this was a convenience sample and not a random one, the normal distribution around the population mean might not be at all right.  The c.i. only talks about random error and not bias.
+
+
+
+
+[^1]:  The equally likely assumption is actually a bit nonsensical as we probably expect the fish to in the middle of the pond and not out past the orbit of Pluto.  However, if we have enough data, the assumption will not play a big role in our estimate.  

@@ -1,0 +1,92 @@
+---
+title: "Normal Normal Bayesian Model"
+author: "Russell Almond"
+date: "September 1, 2020"
+output: html_document
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(shiny)
+```
+
+## Parameterized as Alpha and Beta 
+
+
+```{r abparameters, echo=FALSE}
+inputPanel(
+  sliderInput("a0", label = "Prior alpha (psuedo-successes):",
+              min=.5, max=100, value=5, step=.5),
+  sliderInput("b0", label = "Prior beta (psuedo-failures):",
+              min=.5, max=100, value=5, step=.5),
+  sliderInput("X", label="Number of Successes:",
+               min=0, max=100, value=5, step=1),
+  sliderInput("N", label="Number of Trials:",
+        min = 1, max = 100, value = 10, step = 1)
+  
+)
+p("Posterior Alpha =",textOutput("alpha"),
+  "  Posterior Beta =", textOutput("beta"))
+renderPlot({
+  a0 <- as.numeric(input$a0)
+  b0 <- as.numeric(input$b0)
+  X <-as.numeric(input$X)
+  N <- as.numeric(input$N)
+  a1 <- a0 + X
+  b1 <- b0 + N - X
+  mn0 <- a0/(a0+b0)
+  X1 <- X/N
+  mn1 <- a1/(a1+b1)
+  curve(dbeta(x,a0,b0),xlim=c(0,1),ylim=c(0,5),
+        main=paste("Beta prior and posterior distributions."),
+        xlab="theta",ylab="Density")
+  curve(dbeta(x,a1,b1), lty=4,col="blue", add=TRUE)
+  abline(v=mn0)
+  abline(v=X1,lty=2,col="skyblue")
+  abline(v=mn1,lty=4,col="blue")
+  output$alpha <- renderText(round(a1,2))
+  output$beta <- renderText(round(b1,2))
+})
+```
+
+## Parameterized as mean and peseudo count
+
+```{r pnparameters, echo=FALSE}
+inputPanel(
+  sliderInput("p0", label = "Prior successes rate:",
+              min=0, max=1, value=.5, step=.01),
+  sliderInput("n0", label = "Prior weight (psuedo-count):",
+              min=1, max=100, value=5, step=1),
+  sliderInput("XX", label="Number of Successes:",
+               min=0, max=100, value=5, step=1),
+  sliderInput("NN", label="Number of Trials:",
+        min = 1, max = 100, value = 10, step = 1)
+  
+)
+p("Posterior Rate =",textOutput("p1"),
+  "  Posterior Pseudo-count  =", textOutput("n1"))
+renderPlot({
+  p0 <- as.numeric(input$p0)
+  n0 <- as.numeric(input$n0)
+  a0 <- p0*n0
+  b0 <- (1-p0)*n0
+  X <-as.numeric(input$XX)
+  N <- as.numeric(input$NN)
+  a1 <- a0 + X
+  b1 <- b0 + N - X
+  mn0 <- a0/(a0+b0)
+  X1 <- X/N
+  mn1 <- a1/(a1+b1)
+  curve(dbeta(x,a0,b0),xlim=c(0,1),ylim=c(0,5),
+        main=paste("Beta prior and posterior distributions."),
+        xlab="theta",ylab="Density")
+  curve(dbeta(x,a1,b1), lty=4,col="blue", add=TRUE)
+  abline(v=mn0)
+  abline(v=X1,lty=2,col="skyblue")
+  abline(v=mn1,lty=4,col="blue")
+  output$p1 <- renderText(round(mn1,2))
+  output$n1 <- renderText(round(a1+b1,2))
+})
+```
+

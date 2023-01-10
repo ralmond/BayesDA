@@ -1,0 +1,410 @@
+---
+title: "Exploratory Data Analysis with GGplot"
+author: "Russell Almond"
+date: "August 27, 2020"
+output:
+  pdf_document: default
+  html_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+## Tidyverse Software
+
+For this example, we are going to use GGplot, which is part of the tidyverse.  Tidyverse is an extra layer on top of R which makes it easy to manipulate data as a kind of a workflow.  Note that tidyverse is actually a meta-package:  it downloads a number of generally useful packages, including GGplot (GG stands for _Grammar of Graphics_, a book about how to build up complex plots from smaller pieces.)
+
+The command `install.packages()` installs packages, that is, it downloads them from the CRAN library to your local computer.  The command `library()` tells R that you want to use that package in this session.  You need to run `library()` every time, but you only need to run `install.packages()` once.  
+
+```{r library, echo=TRUE}
+if (!("tidyverse" %in% row.names(installed.packages()))) {
+  install.packages("tidyverse",repos="https://cloud.r-project.org",dependencies=TRUE)
+}
+library(tidyverse)
+
+```
+
+
+# Dplyr tools
+
+Tools for manipulating data.
+
+## Tibbles
+
+For this exercise we will use the data set `state.x77` which comes with R.  You can find more information about this data set by doing:
+```{r}
+help(state.x77)
+```
+
+A `tibble` is a data structure with rows corresponding to cases and columns to variables.  It is a _tidy_ version of a data frame.
+
+
+
+```{r}
+as_tibble(state.x77) %>% add_column(region=state.region,name=state.name,code=state.abb,center_x=state.center$x,center_y=state.center$y) -> state77
+View(state77)
+state77
+```
+
+The `View()` command opens the data frame/matrix/tibble in another window.  
+
+* Try `state77` in the console.  The tibble is slightly different from the data frame in the way it prints.
+
+* Tibble and data frames are pretty much interchangeable.  (Where they aren't use `as.data.frame()` or `as_tibble()` to convert.
+
+![Dangerous Bend](dangerousBend.png)
+Note the type of the variables are shown in the display of the tibble.  The name and postal code are left as strings, but region is a factor (with four levels).  In a data frame, the string variables are automatically converted to factors, which is not always what you want.
+
+* Use `read_csv()` instead of `read.csv()` to load a CSV file as a tibble instead of a data frame.
+
+
+## The Pipe
+
+The special operator `%>%` can be used to chain operations together.
+
+The expression above gives an example.  The output of `as_tibble()` is passed to the `add_column()` which is then passed to the assignment operator `->`.
+
+Note the backward arrow `->`.  This is like the usual assignment operator `<-` except now the name of the variable is on the right instead of the left.
+
+
+A typical chain looks like:
+
+_data_ `%>%` `select`(_variables_) `%>%` `filter`(_cases_) `%>%` _analysis_() `->` _result_
+
+Or maybe the _analysis_ is replaced with a call to _ggplot_ to make a plot.
+
+
+
+## Selecting Variables
+
+The `select()` command can be used to select a subset of variables.
+
+```{r}
+state77 %>% select(code,Population,Income)
+state77 %>% select(code,region:code)
+state77 %>% select(-name)
+state77 %>% select(code,starts_with("center"))
+```
+
+Usually having more columns than you need is harmless.  
+
+For example, using `lm()` to fit a regression of `ggplot()` to make a plot will just use the variables referenced in the model or plot description.
+
+However, sometimes is it easier to work with a smaller subset of the data with just the stuff you need.
+
+## Making New Variables
+
+We already saw the `add_column()` function for adding columns.
+
+The `mutate()` function adds new columns as a function of the old ones:
+
+```{r}
+state77 %>% mutate(Pop_Density=Population/Area) -> state77a
+state77a
+```
+
+
+## Recoding Variables
+
+Recoding is important because sometimes the way the variable is stored in the data file is not the same as the way we want to analyze it. 
+
+* Factor variables can represent categories with integer values or string labels.
+
+  + Often there is a _code book_ which maps integer category labels to string values.  For example:
+  
+1. Female
+2. Male
+
+The `factor()` function creates factor variables.  
+
+```{r}
+factor(c(1,1,1,2,2,2),levels=1:2,labels=c("Female","Male"))
+factor(c("Male","Male","Male","Female","Female","Female"),levels=c("Male","Female"))
+ordered(c("H","H","M","M","L","L"), levels=c("L","M","H"))
+
+```
+* The `levels` argument tells R how the data are coded (in the case of integer coding).
+* The `labels` argument gives the names for the levels (if omitted it is the same as `levels`).
+
+![Dangerous Bend](dangerousBend.png)
+The `ordered()` function produces an ordered variable as opposed to `factor()` which produces a nominal one.  This only makes a difference in a few places.  Probably the most important one is how they are used in an Analysis of Variance (ANOVA).  That is covered in EDF 5402.
+
+_Note Bene!_  The `read_csv()` function which is part of the tidyverse will read factor variables as either character or integer variables, depending on how they are coded.  So you will need to use `mutate(x=factor(x))` to convert `x` into a factor.
+
+The function `parse_factor()` is almost the same, but gives a warning if some of the levels aren't recognized.
+
+```{r}
+
+factor(c("Male","Female","Non-binary"),levels=c("Male","Female"))
+parse_factor(c("Male","Female","Non-binary"),levels=c("Male","Female"))
+```
+
+Another way to do the coding is to use 
+* `recode()` (makes a character or numeric value)
+* `recode_factor()` (makes a factor variable)
+
+The first argument is the vector to be recorded, the remaining arguments are the values to be replaced.  
+
+```{r}
+recode_factor(c(1,1,1,2,2,2),`1`="Male",`2`="Female")
+recode_factor(c(1,1,1,2,2,2),"Male","Female")
+recode_factor(c("M","M","F","F"),M="Male",F="Female")
+recode_factor(c("White","Black","Latinx","Other"),White="White",.default="Non-White")
+
+
+```
+
+Note how we used the last version to collapse several categories into one.  This is often useful, particularly when the number of subjects in one category is small.
+
+
+## Recoding NAs
+
+A special case of recoding comes about with missing values.  
+
+In R, these are called `NA` (for Not Applicable).  
+
+* `NA`s are contagious:  `NA` + anything is still `NA`.
+```{r}
+NA+5
+mean(c(1,2,NA))
+mean(c(1,2,NA),na.rm=TRUE)
+```
+
+
+* `NaN` (not a number) is similar but it comes from nonsense arthimatic (taking log of negative number).
+
+* `NA`s can be coded in many different ways in a data set:  
+  + Leave the value blank.
+  + Special character, e.g., `.` or `*`
+  + Special String, e.g., `NA`
+  + Nonsense numeric value, e.g., `-9`
+
+When using nonsense numeric values, it is important to pick a value that is not plausible, e.g., a large negative value.  That way, if you accidently forget to convert, you can know that something is wrong.
+
+The function `na_if()` can be used to replace a value with NAs.
+
+```{r}
+na_if(c(1:5,-9),-9)
+starwars %>% select(name,eye_color) %>%
+  mutate(eye_color=na_if(eye_color,"unknown"))
+```
+The function `replace_na()` goes in the opposite direction.
+
+For example, we might want to treat missing values as score of 0 on a test.
+
+```{r}
+replace_na(c(1,1,0,0,NA),0)
+```
+
+
+
+
+## Logical Tests
+
+The function `if_else()` is also useful for splitting data sets up into groups.  
+
+We can see the form in:
+```{r}
+args(if_else)
+```
+
+Note that condition is a logical expression which should yeild a true or false value for every row of the tibble.  The variable `true` is the value to use if true, `false` the value to use if false, and `missing` the value to use if missing.
+
+```{r}
+int5 <- -5:5
+if_else(int5<0,"-","+")
+if_else(int5<0,-int5,int5) #Absolute value
+na_if(int5,0)
+if_else(na_if(int5,0)<0 ,"-","+","0")
+
+```
+
+Here are the common logical tests:
+
+* `==`  -- equals (don't confuse this with `=` assignment.)
+* `!=` -- not equals
+* `<`, `<=`, `=>`, `>` -- less than, &c.
+* `!` -- Not (true if the rest of the expression is false)
+* `is.na()` -- True if the value is NA, false otherwise. (Also, `!is.na()`)
+
+* `&` -- logical and (true when LHS and RHS are true)
+* `|` -- logical or (true if either LHS or RHS is true)
+* `%in%` -- True if value is in list.
+
+
+```{r}
+drupes <- c("Almond","Cashew","Walnut")
+c("Peanut","Almond","Hazelnut","Macademia","Cashew") %in% drupes
+```
+
+## Selecting Cases
+
+Very often instead of setting the value to NA, we just want to exclude that row from the data set.
+
+The command `filter()` does this.
+
+```{r}
+state77 %>% filter(!(code %in% c("AK","HI")))
+```
+
+Sometimes we want to temporarily remove the biggest values or the smallest values so we can see the details in a plot.
+
+```{r}
+state77 %>% select(name,Area) %>% filter(Area <200000)
+```
+
+Sometimes we want to create subsets of the data that just have fewer cases.
+
+The functions `sample_frac()` and `sample_n()` specify the size of the sample in fraction of the original data or absolute size.
+
+The function `slice()` will select a contiguous range of cases, which is useful when looping through the data.
+
+
+## Calculating Summary Statistics
+
+Pipe the output of the select and filter command into `summarize()`:
+
+```{r}
+state77 %>% summarize(N=n(),Income=mean(Income),Population=mean(Population))
+```
+Here are some useful functions to use with `summarize()`:
+
+* `n()`, `n_distinct()`, `sum(!is.na())` -- Count, count of unique values, count of non-missing values.
+* `mean()`, `median()` -- Measures of center
+* `min()`, `max()`, `quantile()` -- Position other than the center.
+```{r}
+state77 %>% select(Population) %>% summarize(Min=min(Population),Q1=quantile(Population,.25),Q2=median(Population),Q3=quantile(Population,.75),Max=max(Population))
+```
+
+* `sd()`, `IQR()`, `mad()` -- measures of scale.
+* `sum()`, `prod()` -- Arithmetic
+* `sum()`, `any()`, `all()` -- Summarize logical expressions (count number true, true if all are true, true if any is true).
+
+All of these functions have an optional argument `na.rm`.  If there are NAs, you usually want to include `na.rm=TRUE`, as otherwise the value will be NA.
+
+## Summarizing Multiple columns.
+
+Often, you want to do the same summary on several columns.  
+
+The function `summarize_all()` does that.
+
+```{r}
+state77 %>% select(Area,Population) %>% summarize_all(mean,na.rm=TRUE)
+```
+You can use multiple statsitics by putting them in a list.
+```{r}
+state77 %>% select(Area,Population) %>% summarize_all(list(mean=mean,sd=sd))
+```
+
+The function `summarize_at()` combines the `select()` and `sumarize()`.
+
+The function `summarize_if()` allows the selection of columns based on logical criteria.
+
+## Calculating Statistics by Group
+
+Very often we want to be to compare groups.  We can use the function `group_by()` to split the data set by a factor variable.
+
+```{r}
+state77 %>% group_by(region) %>% select(Area,Population) %>% summarize_all(list(mean=mean,sd=sd))
+
+```
+
+```{r}
+state77 %>% group_by(region) %>%
+  select(Area,Population) %>%
+  summarise_all(list(Min=min,Q1=function(x){quantile(x,.25)},Q2=median,Q3=function(x){quantile(x,.75)},Max=max))
+```
+![Dangerous Bend](dangerousBend.png)
+The `function(){}` makes an anonymous function.  This gets around the problem that `quantile()` needs two arguments, but `summarize_all()` expects a function of just one.
+
+## The cheat sheet.
+
+You can find a handy list of dplyr and other tidyverse commands for manipulating data by selected "Help > Cheat Sheets > Data Mainpulation with dplyr" from the RStudio menu.
+
+# Graphics
+
+## Making Histograms
+
+
+```{r}
+ggplot(state77,aes(Population)) + geom_histogram()
+```
+```{r}
+ggplot(state77,aes(Population)) + geom_histogram(binwidth=500)
+```
+```{r}
+ggplot(state77,aes(Population)) + geom_histogram(bins=10)
+```
+
+
+```{r}
+ggplot(state77,aes(Population)) + geom_dotplot()
+```
+```{r}
+ggplot(state77,aes(Population)) +geom_dotplot(binwidth=1000) +geom_density(aes(y=..scaled..))
+```
+```{r}
+ggplot(state77,aes(Population)) +geom_histogram(binwidth=1000) +geom_density(aes(y=1000*..count..))
+```
+
+```{r}
+ggplot(state77,aes(Population)) +geom_histogram(binwidth=1000) +stat_function(fun= function(x) dnorm(x,mean=mean(state77$Population), sd=sd(state77$Population))*nrow(state77)*1000)
+```
+```{r}
+bw <- 1000
+ggplot(state77,aes(Population)) + geom_histogram(aes(y=..density..),binwidth=bw) + 
+stat_function(fun=dnorm, args=c(mean=mean(state77$Population), sd=sd(state77$Population))) +
+scale_y_continuous("Density",sec.axis=sec_axis(trans = ~ . * bw * nrow(state77), name = "Counts"))
+                
+```
+
+
+
+## Panel Histograms by a Group
+
+```{r}
+ggplot(state77,aes(Population)) + facet_grid(rows=vars(region)) + geom_dotplot()
+```
+
+```{r}
+ggplot(state77,aes(Population)) + facet_grid(rows=vars(region)) + geom_dotplot(binwidth=750)+geom_density(aes(y=750*..count..))
+```
+
+## Making Boxplots
+
+```{r}
+ggplot(state77,aes(x=region,y=Population)) + geom_boxplot()
+```
+```{r}
+ggplot(state77,aes(x=region,y=Population)) + geom_violin()
+```
+```{r}
+ggplot(state77,aes(region,Population)) + geom_dotplot(binaxis="y",stackdir="center")
+```
+
+
+# Saving Your Work
+
+## Saving Your Plots
+
+```{r}
+ggsave("foo.png")
+```
+
+![Just saved file.](foo.png)
+
+
+## Saving Your Tables
+
+```{r}
+library(xtable)
+print(xtable(state77 %>% group_by(region)%>% select(Population,Area) %>% summarize_all(list(mean=mean,sd=sd))),digits=3,type="html",file="foo.html")
+
+```
+[result](foo.html)
+
+## Working in R Markdown
+

@@ -1,0 +1,163 @@
+---
+title: "Kurtosis Practice using Quantile-Quantile Plots"
+author: "Russell Almond"
+date: "February 23, 2019"
+output: html_document
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(lattice)
+```
+
+```{r parameters, echo=FALSE}
+distlist <-list(
+platykurtic = list("Uniform"=runif,
+  "Mixture of normals (different means)"=
+    function (n)
+      ifelse(runif(n)<.5,rnorm(n,-1),
+               rnorm(n,1)),
+  "beta(1.5,1.5" =  function (n)
+    rbeta(n,1.5,1.5)),
+leptokurtic = list("t(df=5)"=function(n) rt(n,5),
+                "Mixture of normals (different sds)"=
+                  function (n)
+       ifelse(runif(n)<.25,rnorm(n,0,3),
+               rnorm(n,0,1)),
+       "Exponential" = rexp),
+mesokurtic = list("normal"=rnorm, 
+                  "Wiebul(2,2)"= function (n)
+                    rweibull(n,2,2),
+                  "Binomial(.45,10)"=function(n)
+                    rbinom(n,10,.45)))
+
+longnames <- c("Platykurtic (flat)"="platykurtic",
+               "Leptokurtic (heavy tails)"="leptokurtic",
+               "Mesokurtic (normal)"="mesokurtic")
+## Initial draw, so that we have some starting values.
+key <- 
+{
+  ## Randomly permute the types.  
+  key <- sample(names(distlist),length(distlist))
+  ## Label from A -- C (or whatever)  
+  names(key) <- sapply(1L:length(key),
+       function (i)
+         intToUtf8(utf8ToInt("Z")-length(key)+i))
+  key
+}
+kdist <- 
+{
+    # draw random distribution for each plot
+    sapply(key, function (r)  
+        sample(names(distlist[[r]]),1L))
+}
+
+```
+
+## Kurtosis Determination Exercise.
+
+In this exercise, the computer will generate 3 datasets:  X, Y and Z.  These will be randomly assigned to high (leptokurtic), medium (mesokurtic) and low (platykurtic) distributions. 
+The data (sorted in order) are plotted on the Y axis and the quantiles of a standard normal (qnorm) distribution are plotted on the X axis.  A normal distribution should appear as a straight line; leptokurtic and platykurtic distributions as 'S' or 'Z' curves. (A 'U' or 'C' shaped curve indicates skewness, not kurtosis.)   _Note:  SPSS plots the normal quantiles on the Y axis and the data on the X:  Which means that leptokurtic and platykurtic distributions will curve in the opposite direction from these Q-Q plots._
+
+
+You can redraw from the same distributions by changing the sample size (higher sample sizes are easier to see).
+```{r stacked hist, echo=FALSE}
+inputPanel(
+  selectInput("nn", label = "Sample Size:",
+              choices = c(50, 100, 500, 1000), selected = 500))
+#  actionButton("go","Redraw"))
+
+# key <- eventReactive(input$go,
+# {
+#   ## Randomly permute the types.  
+#   key <- sample(names(distlist),length(distlist))
+#   ## Label from A -- C (or whatever)  
+#   names(key) <- sapply(1L:length(key),
+#        function (i)
+#          intToUtf8(utf8ToInt("A")-1L+i))
+#   key
+# })
+# kdist <- eventReactive(input$go,
+# {
+#     # draw random distribution for each plot
+#     sapply(key, function (r)  
+#         sample(names(distlist[[r]]),1L))
+# })
+
+
+
+renderPlot({
+    ## Draw random data 
+    kdat <- lapply(names(key), function (k) {
+    x <-do.call(distlist[[key[k]]][[kdist[k]]],
+                list(input$nn))
+      scale(x,(min(x)+max(x))/2,(max(x)-min(x)))*100+50
+  })
+  names(kdat) <- names(key)
+  kdat <- 
+    data.frame(dat=do.call(c,kdat),
+               group=rep(names(key),
+                          each=input$nn))
+  
+  qqmath(~dat|group, data = kdat,
+          layout=c(3,1),horizontal=FALSE,
+         panel=function(x,...) {
+           panel.qqmathline(x,...)
+           panel.qqmath(x,...)
+           })
+
+})
+
+```
+### Which is which?
+
+Identify the kurtosis of each distribution.
+```{r questions, echo=FALSE}
+
+do.call(inputPanel,
+         lapply(names(key), function (k)
+                selectInput(k, label=k,
+                  choices=c(Unknown="unknown", 
+                           longnames),
+                  selected="unknown")))
+
+h4("Answers:\n")
+renderTable({
+  answer <- sapply(names(key),
+   function (k) {
+      if (input[[k]]=="unknown") {
+        "Make your selection.\n"
+      } else {
+        paste(ifelse(input[[k]]==key[k],
+                     "Correct:", "Incorrect:"),
+              "Distribution was",kdist[k],
+               "(",
+        names(longnames)[grep(key[k],longnames)],
+               ")\n")
+    }})
+  names(answer) <- names(key)
+  as.data.frame(answer)
+}, colnames=FALSE,rownames=TRUE)
+
+```
+
+To try again with different distributions, reload the page.  If you are having trouble, try increasing the sample size:  sometimes a small sample won't display the characteristics of the distribution strongly.
+
+Here are the other exercises in this series:
+
+* Skewness Practice:
+   + [Histograms](SkewnessPractice.Rmd)
+   + [Boxplots](SkewnessBoxplot.Rmd)
+   + [Q-Q Plots](SkewnessQQ.Rmd)
+
+* Kurtosis Practice:
+   + [Histograms](KurtosisPractice.Rmd)
+   + [Boxplots](KurtosisBoxplots.Rmd)
+   + [Q-Q Plots](KurtosisQQ.Rmd)
+
+
+
+
+
+

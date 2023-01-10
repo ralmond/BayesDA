@@ -1,0 +1,72 @@
+---
+title: "Normal Parameters"
+author: "Russell Almond"
+date: "January 24, 2019"
+output: html_document
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+library(shiny)
+knitr::opts_chunk$set(echo = TRUE)
+tags$head(tags$script(src="../shared/json2-min.js"),
+          tags$script(src="../shared/jquery.min.js"),
+          tags$link(href="../shared/shiny.css",rel="stylesheet"),
+          tags$script(src="../shared/shiny.min.js"),
+          tags$script(src="../shared/json2-min.js"))
+```
+
+A *parameter* is a value that can be changed in a statistical model.
+For example, the *mean* and *standard deviation* are the parameters of the [normal distribution](https://en.wikipedia.org/wiki/Normal_distribution), which is a model for a population.  Changing the value of a parameter, changes the model. We can see that in the illustration below.  Try changing the values of the mean and standard deviation and see what happens to the shape of the curve.
+
+## Inputs and Outputs
+
+```{r normal, echo=FALSE}
+inputPanel(
+  sliderInput("mn", label = "Mean:",
+              min=0, max=100, value=50, step=1),
+  
+  sliderInput("sd", label = "Standard Deviation:",
+              min = 0.2, max = 25, value = 10, step = 0.1)
+)
+
+renderPlot({
+  mn <- as.numeric(input$mn)
+  sd <- as.numeric(input$sd)
+  curve(dnorm(x,mn,sd),xlim=c(0,100),ylim=c(0,.1),
+        main=paste("Normal distribution with mean",mn,
+                   "and standard deviation",sd),
+        xlab="X",ylab="Density")
+
+})
+```
+
+## Scale and Location Parameters
+
+The *mean* has a special role in the normal distribution; it determines where the center of the curve is.  This makes it a *location parameter*.  
+
+The *standard deviation* has a special role in the normal distribution; it stretches and shrinks the curve around the mean.  This makes it a *scale parameter*.
+
+Sometimes, the effects of scale and location parameters can be hard to see.  This is because most statistical graphics packages adjust the axis of the graph, so that the curve will always appear centered in the plotting window.  In the normal curve above, I fixed the plotting window so that you can see the curve move.  In the example below, I let the plotting window adjust with the curve.  Notice how the curve stays the same, but the labels on the axis change.
+```{r rescaling, echo=FALSE}
+inputPanel(
+  sliderInput("mn1", label = "Mean:",
+              min=0, max=100, value=50, step=1),
+  
+  sliderInput("sd1", label = "Standard Deviation:",
+              min = 0.2, max = 25, value = 10, step = 0.1)
+)
+
+renderPlot({
+  mn1 <- as.numeric(input$mn1)
+  sd1 <- as.numeric(input$sd1)
+  curve(dnorm(x,mn1,sd1),xlim=c(mn1-3*sd1,mn1+3*sd1),
+        main=paste("Normal distribution with mean",mn1,
+                   "and standard deviation",sd1),
+        xlab="X",ylab="Density")
+
+})
+```
+
+
+

@@ -1,0 +1,107 @@
+---
+title: "Law of Large Numbers"
+author: "Russell Almond"
+date: "February 19, 2019"
+output: html_document
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# Law of Large Numbers
+
+This is pretty close to the frequency definition of probability.  Suppose the probability of some event is $p$.  Suppose further than we sample $N$ times from the process that generates this event.  Let $p_N$ be the proportion of times the event occurs in $N$ trials.  As $N$ gets bigger and bigger, $p_N$ gets closer and closer to $p$.
+
+![Detour](sign_turn_left.png)_(Skip this unless you are good with calculus.)_  This is one of those epsilon-delta theorems.  So let $\delta$ be a difference from $p$ and let $\epsilon$ be a small probability.  For any $\epsilon$ and $\delta$, there exists an $N$ such that $P(|p_N-p|>\delta) < \epsilon$.
+
+
+## A demonstration.
+
+In the picture below, pick a probability $p$ and a sample size $N$.  The computer will generate samples up to $N$ and plot $p_N$.
+
+The $\delta$-line is an error bound plus or minus $\delta$ units from the target $p$.  This is a target so you can judge how close you got.
+
+
+```{r LoLN, echo=FALSE}
+inputPanel(
+  selectInput("N", label = "Maximum Sample Size:",
+              choices = c(50, 100, 200, 500, 1000), selected = 200),
+  
+  sliderInput("p", label = "Probability of event (p)",
+              min = 0, max = 1, value = .5, step = 0.01),
+  sliderInput("delta", label = "Distance of reference line from target (delta)",
+              min = 0, max = .1, value = .05, step = 0.005)
+
+)
+
+renderPlot({
+  x <- runif(input$N) < input$p
+  pn <- cumsum(x)/1:input$N
+  plot(1:input$N,pn,xlab="Number of Trials",ylab="Proportion Success",
+       type="l")
+  abline(h=input$p,col="blue")
+  abline(h=input$p+input$delta,col="skyblue")
+  abline(h=input$p-input$delta,col="skyblue")
+})
+```
+
+## Convergence of Distributions (Boot strap distribution)
+
+We can use the _Law of Large Numbers_ to prove an important theorem.  As the sample size gets larger and larger, the sample looks more and more like the population it is drawn from.
+
+
+
+![Proof](sign_turn_left.png) Technically, the _Law of Large Numbers_ refers to the result above.  But we can use it so show a very important basis of statistics.  Suppose we have some kind of distribution, $F(x)$, that generates numbers, $X$.  Recall that the definition of $F(x)=\Pr(X \leq x)$.
+
+![Proof](sign_turn_left.png) Draw a sample of size $N$ from this distribution.  Now consider the sampled data points $X_1,\ldots,X_N$, and consider sampling a new value $Y$ from that distribution.  Let $F_N(y) = \Pr(Y \leq y)$.  This is sometimes called the _bootstrap distribution_.  
+
+![Proof](sign_turn_left.png) By the law of large numbers, for every $y$, as $N$ gets large $F_N(y) \rightarrow F(y)$.  So the sample distribution $F_N()$ converges to the $F()$.
+
+## Demonstration of convergence of distributions.
+
+Pick a distribution:
+* Normal -- standard normal
+* Exponential -- highly skewed
+* Gamma (shape = 3) -- skewed
+* T (df =3) -- high kurtosis
+
+Slide the sample size up and down, notice how the empirical distribution function and histogram coverge to the theoretical distribution function and density.
+
+```{r DistConv, echo=FALSE}
+nmax <- 1000
+rdist <- list(Normal=rnorm, Exponential = rexp, 
+              Gamma = function(n) rgamma(n,3),
+              "T" = function(n) rt(n,3))
+pdist <- list(Normal=pnorm, Exponential = pexp, 
+              Gamma = function(q) pgamma(q,3),
+              "T" = function(q) pt(q,3))
+ddist <- list(Normal=dnorm, Exponential = dexp, 
+              Gamma = function(x) dgamma(x,3),
+              "T" = function(x) dt(x,3))
+
+inputPanel(
+  selectInput("dist",label="Distribution Type",
+              choices=c("Normal","Exponential","Gamma","T"),
+              selected="Normal"),
+   sliderInput("NN", label = "Maximum Sample Size:",
+              min = 25, max=nmax, value=100, step=5)
+
+)
+
+renderPlot({
+  XX <- do.call(rdist[[input$dist]],list(nmax))
+  Fn <-ecdf(XX[1:input$NN])
+  layout(matrix(c(1,2),1,2))
+  
+  plot(Fn, main=paste("Actual vs Empirical Distribution Function, N=",input$NN))
+  curve(do.call(pdist[[input$dist]],list(x)),add=TRUE,lty=2,col="red")
+  
+  hist(XX[1:input$NN], probability = TRUE,
+       main=paste("Actual vs Empirical Density Function, N=",input$NN),xlab="X")
+  curve(do.call(ddist[[input$dist]],list(x)),add=TRUE,lty=2,col="red")
+  
+})
+```
+See also the [animated version](LawOfLargeNumbersAnimated.Rmd).
+

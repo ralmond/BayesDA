@@ -1,0 +1,141 @@
+---
+title: "Law of Large Numbers"
+author: "Russell Almond"
+date: "February 19, 2019"
+output: html_document
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(plotly)
+library(patchwork)
+library(tidyverse)
+accumulate_by <- function(dat, var) {
+  var <- lazyeval::f_eval(var, dat)
+  lvls <- plotly:::getLevels(var)
+  dats <- lapply(seq_along(lvls), function(x) {
+    cbind(dat[var %in% lvls[seq(1, x)], ], frame = lvls[[x]])
+  })
+  dplyr::bind_rows(dats)
+}
+```
+# Law of Large Numbers
+
+This is pretty close to the frequency definition of probability.  Suppose the probability of some event is $p$.  Suppose further than we sample $N$ times from the process that generates this event.  Let $p_N$ be the proportion of times the event occurs in $N$ trials.  As $N$ gets bigger and bigger, $p_N$ gets closer and closer to $p$.
+
+![Detour](sign_turn_left.png)_(Skip this unless you are good with calculus.)_  This is one of those epsilon-delta theorems.  So let $\delta$ be a difference from $p$ and let $\epsilon$ be a small probability.  For any $\epsilon$ and $\delta$, there exists an $N$ such that $P(|p_N-p|>\delta) < \epsilon$.
+
+
+## A demonstration.
+
+In the picture below, pick a probability $p$ and a sample size $N$.  The computer will generate samples up to $N$ and plot $p_N$.
+
+The $\delta$-line is an error bound plus or minus $\delta$ units from the target $p$.  This is a target so you can judge how close you got.
+
+
+```{r LoLN, echo=FALSE}
+inputPanel(
+  selectInput("N", label = "Maximum Sample Size:",
+              choices = c(50, 100, 200, 500, 1000), selected = 200),
+  
+  sliderInput("p", label = "Probability of event (p)",
+              min = 0, max = 1, value = .5, step = 0.01),
+  sliderInput("delta", label = "Distance of reference line from target (delta)",
+              min = 0, max = .1, value = .05, step = 0.005)
+
+)
+
+renderPlotly({
+  n <- 1:input$N
+  x <- runif(input$N) < input$p
+  pn <- cumsum(x)/n
+  datalist <- lapply(n,function(nn)
+    data.frame(n=1:nn,pn=pn[1:nn],f=nn))
+  data <- dplyr::bind_rows(datalist)
+  target <- input$p
+  bounds <- input$p+c(-1,1)*input$delta
+  fig <- 
+      ggplot(data,aes(x=n,y=pn, frame=f)) +
+      geom_line() +
+      xlab("Number of Trials") +
+      ylab("Proportion Success") +
+      geom_hline(aes(yintercept=target,col="target")) +
+      geom_hline(aes(yintercept=bounds[1],col="bound")) +
+      geom_hline(aes(yintercept=bounds[2],col="bound")) + 
+      labs(col="Target Lines") +
+      scale_color_manual(values=c(target="blue",bound="skyblue"))
+  
+  ggplotly(fig) %>%  animation_opts(frame=100,transition=0,redraw=FALSE)
+})
+```
+
+## Convergence of Distributions (Boot strap distribution)
+
+We can use the _Law of Large Numbers_ to prove an important theorem.  As the sample size gets larger and larger, the sample looks more and more like the population it is drawn from.
+
+
+
+![Proof](sign_turn_left.png) Technically, the _Law of Large Numbers_ refers to the result above.  But we can use it so show a very important basis of statistics.  Suppose we have some kind of distribution, $F(x)$, that generates numbers, $X$.  Recall that the definition of $F(x)=\Pr(X \leq x)$.
+
+![Proof](sign_turn_left.png) Draw a sample of size $N$ from this distribution.  Now consider the sampled data points $X_1,\ldots,X_N$, and consider sampling a new value $Y$ from that distribution.  Let $F_N(y) = \Pr(Y \leq y)$.  This is sometimes called the _bootstrap distribution_.  
+
+![Proof](sign_turn_left.png) By the law of large numbers, for every $y$, as $N$ gets large $F_N(y) \rightarrow F(y)$.  So the sample distribution $F_N()$ converges to the $F()$.
+
+## Demonstration of convergence of distributions.
+
+Pick a distribution:
+* Normal -- standard normal
+* Exponential -- highly skewed
+* Gamma (shape = 3) -- skewed
+* T (df =3) -- high kurtosis
+
+Slide the sample size up and down, notice how the empirical distribution function and histogram coverge to the theoretical distribution function and density.
+
+```{r DistConv, echo=FALSE}
+nmax <- 1000
+rdist <- list(Normal=rnorm, Exponential = rexp, 
+              Gamma = function(n) rgamma(n,3),
+              "T" = function(n) rt(n,3))
+pdist <- list(Normal=pnorm, Exponential = pexp, 
+              Gamma = function(q) pgamma(q,3),
+              "T" = function(q) pt(q,3))
+ddist <- list(Normal=dnorm, Exponential = dexp, 
+              Gamma = function(x) dgamma(x,3),
+              "T" = function(x) dt(x,3))
+
+inputPanel(
+  selectInput("dist",label="Distribution Type",
+              choices=c("Normal","Exponential","Gamma","T"),
+              selected="Normal"),
+   selectInput("NN", label = "Maximum Sample Size:",
+              choices = c(50, 100, 200, 500, 1000), selected = 200),
+  
+)
+
+cumdat <- reactive({
+  NN <- input$NN
+  XX <- do.call(rdist[[input$dist]],list(NN))
+  bind_rows(
+      lapply(25:NN,function(i)
+        data.frame(x=sort(XX[1:i]),Fn=(1:i)/i,f=i)))
+})
+
+renderPlotly({
+  erfplot <- ggplot(cumdat(),aes(x,y=Fn,frame=f)) + geom_point()+stat_function(fun=pdist[[input$dist]],geom = "line",col="red") +  labs(title="Actual vs Empirical Distribution Function")
+  
+ 
+ ggplotly(erfplot) %>% animation_opts(frame=100) 
+})
+
+renderPlotly({
+ histplot <- ggplot(cumdat(),aes(x,frame=f)) + geom_histogram(aes(y=..density..),binwidth=.25, position="identity") +
+ stat_function(fun=ddist[[input$dist]],geom="line",col="red") + labs(
+       title="Actual vs Empirical Density Function")
+
+ ggplotly(histplot) %>% animation_opts(frame=100)
+})
+```
+
+See also the [non-animated version](LawOfLargeNumbers.Rmd).
+
