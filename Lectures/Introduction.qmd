@@ -223,7 +223,7 @@ $$ \frac{.01}{.05} 70 + \frac{.04}{.05} 80 = 78 $$
 
 -   Posterior mean $\pm z_{1-\alpha/2} \cdot$ posterior sd
 
--   $ 78 \pm 2*4.5$ (95% c.i.)
+-   \$ 78 \pm 2\*4.5\$ (95% c.i.)
 
 -   Really is a 95% chance $\theta$ is between 69 and 87.
 
@@ -249,8 +249,7 @@ $$ \frac{.01}{.05} 70 + \frac{.04}{.05} 80 = 78 $$
 
 -   If prior is uniform, MAP and MLE are the same.
 
--   Flat normal prior 
-$$ \theta \sim N(0,\infty) $$
+-   Flat normal prior $$ \theta \sim N(0,\infty) $$
 
     -   Limit of normal distribution as variance goes to infinity.
 
@@ -258,13 +257,13 @@ $$ \theta|X \sim N(80,5) $$
 
 ## Proper priors prevent problems
 
-* Instead of the classical test theory model, assume we have an IRT model
+-   Instead of the classical test theory model, assume we have an IRT model
 
-* If the person gets all items right the MLE is positive infinity
+-   If the person gets all items right the MLE is positive infinity
 
-* If the person gets all items wrong the MLE is negative infinity
+-   If the person gets all items wrong the MLE is negative infinity
 
-* If you have a proper prior, then MAP is shrunk towards prior (population) mean
+-   If you have a proper prior, then MAP is shrunk towards prior (population) mean
 
 ## Quiz 2
 
@@ -272,56 +271,53 @@ Assume we are doing a typical $t$-test using the classical Neyman-Pearson framew
 
 Which is larger
 
-A. Pr(difference of means = 0)
-B. 5%
-C. A and B are about the same
-D. Can't tell
+A. Pr(difference of means = 0) B. 5% C. A and B are about the same D. Can't tell
 
 ## Bayesian versus Classical Hypothesis Testing
 
-* No real analog of classical hypothesis test
+-   No real analog of classical hypothesis test
 
-* Setup two models:
+-   Setup two models:
 
-  - $M_0$:  difference of means is "around zero"
-  - $M_1$:  difference of means is "different from zero"
+    -   $M_0$: difference of means is "around zero"
+    -   $M_1$: difference of means is "different from zero"
 
-* Can then look at Bayes Factor (ratio of likelihoods) and pick one over the other
+-   Can then look at Bayes Factor (ratio of likelihoods) and pick one over the other
 
 ## Don Rubin's Bayesian Rationale
 
-* "I'm a Bayesian because I want my tests and confidence intervals to be well calibrated."
+-   "I'm a Bayesian because I want my tests and confidence intervals to be well calibrated."
 
-  - C.I.s have correct coverage probability.
-  
-  - Tests have right level & power
-  
-* Bayesian rule of treating unknown quantities as random variables is easier than propagating standard errors.
+    -   C.I.s have correct coverage probability.
+
+    -   Tests have right level & power
+
+-   Bayesian rule of treating unknown quantities as random variables is easier than propagating standard errors.
 
 ## Regression
 
-* Consider prediction interval for point from a regression model.
+-   Consider prediction interval for point from a regression model.
 
-* Two sources of error:
+-   Two sources of error:
 
-  - Error estimating parameters
+    -   Error estimating parameters
 
-  - Residual distribution of points around regression line
+    -   Residual distribution of points around regression line
 
-* In Bayesian calculations parameters are random variables and add to random distribution of points around line
+-   In Bayesian calculations parameters are random variables and add to random distribution of points around line
 
 ## Missing Data/Multiple Imputations
 
-* Data are missing, but we have likelihood which shows relationship between missing data and parameters
+-   Data are missing, but we have likelihood which shows relationship between missing data and parameters
 
-* Can draw a plausible value (imputation) for missing value from that distribution, but that doesn’t model our uncertainty about the missing value
+-   Can draw a plausible value (imputation) for missing value from that distribution, but that doesn't model our uncertainty about the missing value
 
-* Drawing multiple plausible values (imputations) for missing values from that distribution does model our uncertainty
+-   Drawing multiple plausible values (imputations) for missing values from that distribution does model our uncertainty
 
 ## Bottom Line
 
-* Principled approach to inference:  everything is known or a random variable
+-   Principled approach to inference: everything is known or a random variable
 
-* Probability as state of knowledge interpretation is more flexible than probability as frequency interpretation
+-   Probability as state of knowledge interpretation is more flexible than probability as frequency interpretation
 
-* Solving large, complex problems is easier:  if only we can solve the integrals
+-   Solving large, complex problems is easier: if only we can solve the integrals
