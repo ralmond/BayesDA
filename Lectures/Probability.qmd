@@ -2,3 +2,283 @@
 title: "Probability"
 format: revealjs
 ---
+
+```{r libs}
+library(tidyverse)
+library(plotly)
+library(cowplot)
+library(magick)
+library(shiny)
+```
+
+# Discrete Probabilities
+
+## The Urn Model
+
+```{r urnPlot}
+urn_image <- "img/Amphora.png"
+getwd()
+
+ggdraw() + draw_image(urn_image)
+```
+
+-   Urn contains $b$ black balls and $w$ white balls.
+
+-   All same size, weight, texture &c. Thoroughly mixed.
+
+-   Draw a ball without looking.
+
+\$ Probability of drawing a balck ball is $b/(b+w)$
+
+## Probability: Frequency Definition
+
+-   $E$ is an event (set of possible outcomes).
+
+-   $N$ is the number of opportunities for $E$ to occur.
+
+-   $C_N(E)$ is the number of times (count) that $E$ occurs in $N$ opportunities.
+
+$$ \Pr(E) = \lim_{N \rightarrow \infty} \frac{C_N(E)}{N} $$
+## Subjective Probability
+
+The probability of an event $E$ is $p$ if **we** think it behaves like an urn with a proportion $p$ of black balls.
+
+* Gets around problems with event occurring only once.
+
+* Often used informally, “What is the probability it will rain this weekend?”
+
+## The Law of large numbers.
+
+Let $\delta$ be a small positive number.
+
+Let $\Pr(E) = p_E$.
+
+There exits an $N'$ for which if $N>N'$
+
+$$ | p_E - C_E(N)/N 
+ | < \delta $$
+ 
+[Law of Large Numbers Demo](https://pluto.coe.fsu.edu/rdemos/IntroStats/LawofLargeNumbers.Rmd)
+ 
+[Law of Large Numbers Animated Demo](https://pluto.coe.fsu.edu/rdemos/IntroStats/LawofLargeNumbersAnimated.Rmd)
+
+## Subjective versus Objective
+
+* Probability is “objective” if **we** agree on its value.
+
+  - Document assumptions!
+
+* Probability is relative to state of information
+
+* Some people only accept frequency definition
+
+* Same people often make strong assumptions about likelihood with minimal documentation
+
+_Models and assumptions should be checked!_
+
+# Probability as a Measure
+
+Like length, area, or count.
+
+## Properties
+
+Measures are a set function, map set (subset of $\Omega$) to non-negative real number.
+
+* $\mu(E) \ge 0$; $\mu(\emptyset)=0$.
+
+* $\mu(A \cup B) = \mu(A) + \mu(B)$ if $A \cap B = \emptyset$
+  - Extends to finite (& infinite) sums
+  
+Additionally probability:
+
+* $\overline{A} = \{\omega \in \Omega : \omega \not\in A \}$
+
+* $\Pr(A) + \Pr(\overline{A}) = 1$, therefore $\Pr(A) \leq 1$
+
+## Additivity
+
+* Disjoint Events
+
+  - Urn has $g$ green, $r$ red and $w$ white balls.
+  - Probability of drawing a colored (green or red) ball:
+  $$ \Pr(G \vee R) = \frac{g}{g+r+w} + \frac{r}{g+r+w}= \frac{g+r}{g+r+w} $$
+  
+* Overlapping Events
+  - Need to know the degree of overlap, $\Pr (A \cap B)$
+  
+$$\Pr(A\cup B) = \Pr(A) + \Pr(B) - \Pr(A \cap B)$$
+
+# Impreceision and Uncertainty
+
+## Uncertainty versus Imprecision
+
+* _Uncertain_ – we don’t know what will happen next time, but we can predict long run behavior 
+
+  - Draw ball from urn of known composition
+
+* _Imprecise_ – we don’t know (within limits) what will happen in the long run
+
+  - Draw ball from urn of unknown composition
+
+* Probability only deals with uncertainty, not imprecision.
+
+  - But sometimes imprecision is approximated with uncertainty.
+
+## Imprecise Urn Models
+
+* Urn is population
+
+* Draws from urn are sample
+
+* Big source of problems in statistics is not being precise about who is in and is not in the urn
+
+* Imprecise:
+
+  - FSU graduate students
+
+* Precise:
+
+  - Students enrolled a Ph.D. or Masters program in the FSU College of Education on Sep 4, 2010.
+
+## Chaotic Phenomenon with Unknown Starting values.
+
+Coin flip is determined by initial linear and angular momentum, height of toss, moment of inertia of coin.  
+
+Small variations switch from "head" to "tails".
+
+[Percy Diaconis Video](https://www.youtube.com/watch?v=AYnJv68T3MM&t=0s)
+
+Often we model these unknown starting conditions as "random".
+
+# Conditional Probability
+
+## Definition
+
+```{r CondProb}
+plot(c(0,2),c(0,1),type="n",xaxt="n",yaxt="n",xlab="",ylab="")
+polygon(c(0,0,1,1),c(0,1,1,0),col="blue")
+polygon(c(1,1,2,2),c(0,1,1,0),col="yellow")
+Ev.x <- c(.7,.7,1.2,1.2)
+Ev.y <- c(.3,.7,.6,.4)
+Ev.mf <-(1-Ev.x[1])/(Ev.x[4]-Ev.x[1])
+Ev.mid <-(Ev.y[c(4,3)]-Ev.y[c(1,2)])*Ev.mf + Ev.y[c(1,2)]
+polygon(c(Ev.x[1:2],c(1,1)),c(Ev.y[1:2],rev(Ev.mid)),
+        col="aquamarine")
+polygon(c(c(1,1),Ev.x[3:4]),c(Ev.mid,Ev.y[3:4]),
+        col="yellowgreen")
+abline(v=1)
+text(.85,.5,"E")
+axis(3,at=c(.5,1.5),labels=c("H","not H"),tick=FALSE)
+```
+
+## Examples
+
+## Law of Total Probability (Discrete Version)
+
+## Example
+
+## Bayes Theorem
+
+## Discrete IRT Example
+
+## Rare Disease Problem
+
+# Independence
+
+## Definition
+
+## Accident Proneness
+
+## Conditional Independence
+
+## Differential Item Functioning
+
+## Gambler's Fallacy
+
+## Accident Pronness vs Gambler's Fallacy
+
+# Random Variables (Discrete)
+
+## Definition
+
+## Probability (Mass) Function (p.f., p.m.f.)
+
+## Cumulative Distribution Function (cdf)
+
+## Expected Value and Variance
+
+## Moments
+
+## Central Moments
+
+# Some examples
+
+-   [Uniform (discrete)](https://pluto.coe.fsu.edu/rdemos/IntroStats/DiscreteUniformParams.Rmd)
+    -   All events are equally likely. (*At Random*)
+-   [Binomial (& Bernoulli)](https://pluto.coe.fsu.edu/rdemos/IntroStats/BinomialParams.Rmd)
+    -   Bernoulli trial is a single binary outcome.
+    -   Binomial is the number of "successes" in a certain number of trials.
+    -   Categorical and multinomial (more than two categories)
+-   [Poisson](https://pluto.coe.fsu.edu/rdemos/IntroStats/PoissonParams.Rmd)
+    -   Number of events in a given interval (of time or space)
+    -   Events come at a uniform rate.
+-   [Negative Binomial](https://pluto.coe.fsu.edu/rdemos/IntroStats/NegBinomial.Rmd)
+    -   Number of trials until $k$ "successes."
+
+#Law of Large Numbers
+
+## Bootstrap Distribution
+
+## Strong Law
+
+## Statistics
+
+# Continuous Variables
+
+## The Area Model
+
+## Probability Density Function (p.d.f.)
+
+## CDFs and PDFs
+
+## Lebesgue--Stieltjes Integrals
+
+## Probability 0 and 1
+
+# Common Continuous Distributions
+
+-   [Uniform (Continuous)](https://pluto.coe.fsu.edu/rdemos/UniformParams.Rmd)
+
+-   [Normal](https://pluto.coe.fsu.edu/rdemos/NormalParams.Rmd)
+
+    -   [Log Normal](https://pluto.coe.fsu.edu/rdemos/LogNormalParams.Rmd)
+
+-   [Gamma](https://pluto.coe.fsu.edu/rdemos/GammaParams.Rmd)
+
+    -   Waiting times for Poisson Processes
+    -   Can use either scale or rate (1/scale) parameter
+    -   [Exponential](https://pluto.coe.fsu.edu/rdemos/ExpoentialParams.Rmd)
+        -   Gamma distribution with shape parameter = 1.
+    -   [Chi-squared](https://pluto.coe.fsu.edu/rdemos/Chi2Params.Rmd)
+        -   Sum of the squares of $\nu$ unit normals; shape parameter is $\nu/2$.
+
+-   [Beta](https://pluto.coe.fsu.edu/rdemos/BetaParams.Rmd)
+
+    -   Values range between 0 and 1.
+    -   Conjugate of binomial.
+    -   Dirichlet (multivariate beta)
+        -   Conjugate of multinomial.
+        -   Defined on a simplex (a vector which must sum to one).
+
+-   [Student's t](https://pluto.coe.fsu.edu/rdemos/StudenttParams.Rmd)
+
+    -   Normal divided by square root of Chi-squared (with $\nu$ degrees of freedom).
+    -   High kurtosis for low $\nu$.
+    -   [Cauchy](https://pluto.coe.fsu.edu/rdmeos/CauchyParams.Rmd)
+        -   Student's t with 1 degree of freedom
+        -   Ratio of two normals.
+        -   Mean and variance are infinite!
+
+-   [Wishart](https://pluto.coe.fsu.edu/rdemos/Wishart.Rmd)
+
+    -   Like Chi-square, but for covariance matrixes.
