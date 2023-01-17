@@ -2,3 +2,462 @@
 title: "Probability"
 format: revealjs
 ---
+
+```{r libs}
+library(tidyverse)
+library(plotly)
+library(cowplot)
+library(magick)
+library(shiny)
+library(vcdExtra)
+library(diagramR)
+```
+
+# Discrete Probabilities
+
+## The Urn Model
+
+```{r urnPlot}
+urn_image <- "img/Amphora.png"
+getwd()
+
+ggdraw() + draw_image(urn_image)
+```
+
+-   Urn contains $b$ black balls and $w$ white balls.
+
+-   All same size, weight, texture &c. Thoroughly mixed.
+
+-   Draw a ball without looking.
+
+\$ Probability of drawing a balck ball is $b/(b+w)$
+
+## Probability: Frequency Definition
+
+-   $E$ is an event (set of possible outcomes).
+
+-   $N$ is the number of opportunities for $E$ to occur.
+
+-   $C_N(E)$ is the number of times (count) that $E$ occurs in $N$ opportunities.
+
+$$ \Pr(E) = \lim_{N \rightarrow \infty} \frac{C_N(E)}{N} $$ \## Subjective Probability
+
+The probability of an event $E$ is $p$ if **we** think it behaves like an urn with a proportion $p$ of black balls.
+
+-   Gets around problems with event occurring only once.
+
+-   Often used informally, "What is the probability it will rain this weekend?"
+
+## The Law of large numbers.
+
+Let $\delta$ be a small positive number.
+
+Let $\Pr(E) = p_E$.
+
+There exits an $N'$ for which if $N>N'$
+
+$$ | p_E - C_E(N)/N 
+ | < \delta $$
+
+[Law of Large Numbers Demo](https://pluto.coe.fsu.edu/rdemos/IntroStats/LawofLargeNumbers.Rmd)
+
+[Law of Large Numbers Animated Demo](https://pluto.coe.fsu.edu/rdemos/IntroStats/LawofLargeNumbersAnimated.Rmd)
+
+## Subjective versus Objective
+
+-   Probability is "objective" if **we** agree on its value.
+
+    -   Document assumptions!
+
+-   Probability is relative to state of information
+
+-   Some people only accept frequency definition
+
+-   Same people often make strong assumptions about likelihood with minimal documentation
+
+*Models and assumptions should be checked!*
+
+# Probability as a Measure
+
+Like length, area, or count.
+
+## Properties
+
+Measures are a set function, map set (subset of $\Omega$) to non-negative real number.
+
+-   $\mu(E) \ge 0$; $\mu(\emptyset)=0$.
+
+-   $\mu(A \cup B) = \mu(A) + \mu(B)$ if $A \cap B = \emptyset$
+
+    -   Extends to finite (& infinite) sums
+
+Additionally probability:
+
+-   $\overline{A} = \{\omega \in \Omega : \omega \not\in A \}$
+
+-   $\Pr(A) + \Pr(\overline{A}) = 1$, therefore $\Pr(A) \leq 1$
+
+## Additivity
+
+-   Disjoint Events
+
+    -   Urn has $g$ green, $r$ red and $w$ white balls.
+    -   Probability of drawing a colored (green or red) ball: $$ \Pr(G \vee R) = \frac{g}{g+r+w} + \frac{r}{g+r+w}= \frac{g+r}{g+r+w} $$
+
+-   Overlapping Events
+
+    -   Need to know the degree of overlap, $\Pr (A \cap B)$
+
+$$\Pr(A\cup B) = \Pr(A) + \Pr(B) - \Pr(A \cap B)$$
+
+# Imprecision and Uncertainty
+
+## Uncertainty versus Imprecision
+
+-   *Uncertain* -- we don't know what will happen next time, but we can predict long run behavior
+
+    -   Draw ball from urn of known composition
+
+-   *Imprecise* -- we don't know (within limits) what will happen in the long run
+
+    -   Draw ball from urn of unknown composition
+
+-   Probability only deals with uncertainty, not imprecision.
+
+    -   But sometimes imprecision is approximated with uncertainty.
+
+## Imprecise Urn Models
+
+-   Urn is population
+
+-   Draws from urn are sample
+
+-   Big source of problems in statistics is not being precise about who is in and is not in the urn
+
+-   Imprecise:
+
+    -   FSU graduate students
+
+-   Precise:
+
+    -   Students enrolled a Ph.D. or Masters program in the FSU College of Education on Sep 4, 2010.
+
+## Chaotic Phenomenon with Unknown Starting values.
+
+Coin flip is determined by initial linear and angular momentum, height of toss, moment of inertia of coin.
+
+Small variations switch from "head" to "tails".
+
+[Percy Diaconis Video](https://www.youtube.com/watch?v=AYnJv68T3MM&t=0s)
+
+Often we model these unknown starting conditions as "random".
+
+# Conditional Probability
+
+## Definition
+
+```{r CondProb, echo=FALSE}
+plot(c(0,2),c(0,1),type="n",xaxt="n",yaxt="n",xlab="",ylab="")
+polygon(c(0,0,1,1),c(0,1,1,0),col="blue")
+polygon(c(1,1,2,2),c(0,1,1,0),col="yellow")
+Ev.x <- c(.7,.7,1.2,1.2)
+Ev.y <- c(.3,.7,.6,.4)
+Ev.mf <-(1-Ev.x[1])/(Ev.x[4]-Ev.x[1])
+Ev.mid <-(Ev.y[c(4,3)]-Ev.y[c(1,2)])*Ev.mf + Ev.y[c(1,2)]
+polygon(c(Ev.x[1:2],c(1,1)),c(Ev.y[1:2],rev(Ev.mid)),
+        col="aquamarine")
+polygon(c(c(1,1),Ev.x[3:4]),c(Ev.mid,Ev.y[3:4]),
+        col="yellowgreen")
+abline(v=1)
+text(.85,.5,"E")
+axis(3,at=c(.5,1.5),labels=c("H","not H"),tick=FALSE)
+```
+
+$$\Pr(E|H) = \frac{\Pr(E \cap H)}{\Pr(H)} $$
+
+## Examples
+
+-   Pr ( Own a computer \| Graduate Student)
+
+-   Pr( Amazon shopper buys Jeeves & Wooster \| Amazon shopper buys Complete Monte Python's Flying Circus)
+
+-   Pr (Patient has fever \| Patient has strep throat)
+
+-   Pr (Patient improves \| Patient given placebo)
+
+## Law of Total Probability (Discrete Version)
+
+$$ \Pr(E) = \Pr(E|H) \Pr(H) + \Pr(E|\overline{H})\Pr(\overline{H}) $$
+
+$$ \Pr(B) = \sum_i \Pr(B|A_i)\Pr(A_i) $$
+
+Where \$ A_i \cap A_j =\emptyset\$ and $\bigcup_i A_i = \Omega$
+
+## Example
+
+-   Pick a graduate student at random, what is probability student is in 2nd year of program
+
+-   Distribution: Masters (60%), Ph.D. (40%)
+
+-   Masters: 1st (50%), 2nd (40%), 3rd (10%)
+
+-   PhD: 1st (25%), 2nd (25%), 3rd (20%), 4th (15%), 5th (8%), 6th (5%), 7th (2%)
+
+## Bayes Theorem
+
+$$ \Pr(H|E) = \frac{\Pr(E|H)\Pr(H)}{\Pr(E)} $$
+
+$$ = \frac{\Pr(E|H)\Pr(H)}{\Pr(E|H)\Pr(H)+\Pr(E|\overline{H})\Pr(\overline{H})}$$
+
+|            |                                  |
+|------------|----------------------------------|
+| Prior      | $\Pr(H)$                         |
+| Likelihood | $\Pr(E|H)$;$\Pr(E|\overline{H})$ |
+| Posterior  | $\Pr(H|E)$                       |
+
+## Discrete IRT Example
+
+-   *Skill* ($S$) can take on three values: `low`, `medium` and `high`
+-   Prior distribution 1/3 of students expected in each cell.
+-   Let $X$ be the score (right/wrong) for a single item.
+    -   $\Pr(X=\text{right}|S=\text{high} = .9$
+    -   $\Pr(X | S=\text{medium}) = .6$
+    -   $\Pr(X | S=\text{low}) = .2$
+
+## Rare Disease Problem
+
+<https://pluto.coe.fsu.edu/rdemos/IntroStats/RareDisease.Rmd>
+
+# Independence
+
+## Definition
+
+```{r CondProb, echo=FALSE}
+plot(c(0,2),c(0,1),type="n",xaxt="n",yaxt="n",xlab="",ylab="")
+polygon(c(0,0,1,1),c(0,1,1,0),col="blue")
+polygon(c(1,1,2,2),c(0,1,1,0),col="yellow")
+Ev.x <- c(.75,.75,1.25,1.25)
+Ev.y <- c(.4,.6,.6,.4)
+Ev.mf <-(1-Ev.x[1])/(Ev.x[4]-Ev.x[1])
+Ev.mid <-(Ev.y[c(4,3)]-Ev.y[c(1,2)])*Ev.mf + Ev.y[c(1,2)]
+polygon(c(Ev.x[1:2],c(1,1)),c(Ev.y[1:2],rev(Ev.mid)),
+        col="aquamarine")
+polygon(c(c(1,1),Ev.x[3:4]),c(Ev.mid,Ev.y[3:4]),
+        col="yellowgreen")
+abline(v=1)
+text(.85,.5,"B")
+axis(3,at=c(.5,1.5),labels=c("A","not A"),tick=FALSE)
+```
+
+$$ \Pr(B) = \Pr(B|A) = \Pr(B|\overline{A}) $$ $$ \Pr(A) = \Pr(A|B) = \Pr(A|\overline{B}) $$ $$ \Pr(A \cap B) = \Pr(A|B)\Pr(B) = \Pr(A)\Pr(B) $$
+
+-   Knowing $A$ provides no information about $B$ and vise versa.
+
+## Accident Proneness (Feller, 1968)
+
+-   Driving Skill: 5/6 Normal, 1/6 Accident Prone
+-   Probability of accident in a given year
+    -   1/100 Normal drivers
+    -   1/10 Accident Prone drivers
+-   Accidents happen independently each year.
+
+## Calculate
+
+$\Pr(Y_i)$. -- Prob of accident in a given year.
+
+$\Pr(Y_1 \wedge Y_2)$ -- Accident in two years.
+
+$\Pr(Y_2 | Y_1)$ -- Accident in 2nd year given accident in first year.
+
+## Explanation
+
+$\Pr(S=\text{normal}|A_i)$ -- Probability in normal category given accident.
+
+```{r ciGraph}
+DiagrammeR::grViz("
+digraph AP {
+  Driving -> Year1;
+  Driving -> Year2;
+}")
+```
+
+## Conditional Independence
+
+* _Conditional Independence_: $\Pr(Y_1,Y_2|S) = \Pr(Y_1|S) \Pr(Y_2|S) $
+* Years are _marginally dependent_.
+* Separation in graph tells the story.
+* Information flows from from _Year1_ to _Driving Skill_ to _Year2_
+
+## Another Example
+
+```{r covidGraph}
+DiagrammeR::grViz("
+digraph Autotrain {
+  Train -> COVID;
+  Train -> MaskOnTrain;
+  MaskOnTrain -> COVID;
+  Vaccine -> COVID;
+  COVID -> fever;
+  COVID -> congestion;
+  COVID -> pcrTest;
+}")
+```
+
+## Differential Item Functioning
+
+* High stakes test we want it to be “fair” to certain group (focal group) as compared to reference group
+  - But, ability mix may be different in two groups
+* Let
+ - $X_j$ be score on Item $j$
+ - $A$ be ability of examinee
+ - $G$ be group membership of examinee
+
+Want $\Pr(X_i|A,G) = \Pr(X_i|A)$
+
+
+## Gambler's Fallacy
+
+* For games of chance (e.g., spins of the roulette wheel) each event is independent
+
+* Seeing 10 heads in a row doesn’t change probability of next toss
+
+*Law of large numbers is about infinity
+
+* But, unusual events makes us question our model
+
+
+## Accident Pronness vs Gambler's Fallacy
+
+Why doesn’t the Gambler’s Fallacy principle apply to the Accident Proneness example?
+
+
+# Random Variables (Discrete)
+
+## Definition
+
+* Imagine that each ball in the urn has a number painted on the side
+* Let $X(\omega)$ be the value of the number of the randomly chosen ball, _random variable_.
+* For Nominal/Ordinal variables, can use integer coding to create random variables.
+
+_Convention_:  Use captial letters for r.v.s, lower case for possible values.
+
+## Probability (Mass) Function (p.f., p.m.f.)
+
+* Let $p(x)= \{\omega \in \Omega: X(\omega)=x\}$ be the proportion of balls which map to $x$.
+
+* Often shows with histogram
+
+```{r barplot}
+x <- 0:10
+p <- dbinom(x,10,.3)
+pmf <-data.frame(x=x,p=p)
+ggplot(pmf,aes(x=x,y=p)) + geom_col()
+```
+
+
+## Cumulative Distribution Function (c.d.f. or d.f.)
+
+$$ F(x) = \Pr(X\leq x) = \sum_{a < x} p(a) $$
+
+* _Support of $X$_ is set of values for which $p(x)>0$.
+* Distribution funciton is always non-decreasing.
+
+```{r df}
+pmf$Fx <- cumsum(pmf$p)
+ggplot(pmf,aes(x=x,y=Fx)) + geom_step() + geom_point()
+```
+
+## Expected Value and Variance
+
+_Expected Value_ (mean)
+
+$$ E[X] = \sum xp(x) = \mu $$
+_Variance_ 
+
+$$ \text{Var}(X) = E[(X-\mu)^2] = \sum (x-E[X])^2 p(x) $$
+_Standard Deviation_ $\sqrt{\text{Var}(X)}$
+_Precision_ $1/\text{Var}(X)$
+
+## Moments
+
+<https://en.wikipedia.org/wiki/Moment_(mathematics)>
+
+## Linearity
+
+$$E[aX+c] = aE[c] + c$$
+$$\text{Var}{aX+c} = a^2\text{Var}(X)$$
+
+
+# Some examples
+
+-   [Uniform (discrete)](https://pluto.coe.fsu.edu/rdemos/IntroStats/DiscreteUniformParams.Rmd)
+    -   All events are equally likely. (*At Random*)
+-   [Binomial (& Bernoulli)](https://pluto.coe.fsu.edu/rdemos/IntroStats/BinomialParams.Rmd)
+    -   Bernoulli trial is a single binary outcome.
+    -   Binomial is the number of "successes" in a certain number of trials.
+    -   Categorical and multinomial (more than two categories)
+-   [Poisson](https://pluto.coe.fsu.edu/rdemos/IntroStats/PoissonParams.Rmd)
+    -   Number of events in a given interval (of time or space)
+    -   Events come at a uniform rate.
+-   [Negative Binomial](https://pluto.coe.fsu.edu/rdemos/IntroStats/NegBinomial.Rmd)
+    -   Number of trials until $k$ "successes."
+
+#Law of Large Numbers
+
+
+
+## Bootstrap Distribution
+
+## Strong Law
+
+## Statistics
+
+# Continuous Variables
+
+## The Area Model
+
+## Probability Density Function (p.d.f.)
+
+## CDFs and PDFs
+
+## Lebesgue--Stieltjes Integrals
+
+## Probability 0 and 1
+
+# Common Continuous Distributions
+
+-   [Uniform (Continuous)](https://pluto.coe.fsu.edu/rdemos/UniformParams.Rmd)
+
+-   [Normal](https://pluto.coe.fsu.edu/rdemos/NormalParams.Rmd)
+
+    -   [Log Normal](https://pluto.coe.fsu.edu/rdemos/LogNormalParams.Rmd)
+
+-   [Gamma](https://pluto.coe.fsu.edu/rdemos/GammaParams.Rmd)
+
+    -   Waiting times for Poisson Processes
+    -   Can use either scale or rate (1/scale) parameter
+    -   [Exponential](https://pluto.coe.fsu.edu/rdemos/ExpoentialParams.Rmd)
+        -   Gamma distribution with shape parameter = 1.
+    -   [Chi-squared](https://pluto.coe.fsu.edu/rdemos/Chi2Params.Rmd)
+        -   Sum of the squares of $\nu$ unit normals; shape parameter is $\nu/2$.
+
+-   [Beta](https://pluto.coe.fsu.edu/rdemos/BetaParams.Rmd)
+
+    -   Values range between 0 and 1.
+    -   Conjugate of binomial.
+    -   Dirichlet (multivariate beta)
+        -   Conjugate of multinomial.
+        -   Defined on a simplex (a vector which must sum to one).
+
+-   [Student's t](https://pluto.coe.fsu.edu/rdemos/StudenttParams.Rmd)
+
+    -   Normal divided by square root of Chi-squared (with $\nu$ degrees of freedom).
+    -   High kurtosis for low $\nu$.
+    -   [Cauchy](https://pluto.coe.fsu.edu/rdmeos/CauchyParams.Rmd)
+        -   Student's t with 1 degree of freedom
+        -   Ratio of two normals.
+        -   Mean and variance are infinite!
+
+-   [Wishart](https://pluto.coe.fsu.edu/rdemos/Wishart.Rmd)
+
+    -   Like Chi-square, but for covariance matrixes.
