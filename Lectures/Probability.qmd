@@ -232,6 +232,24 @@ $$ = \frac{\Pr(E|H)\Pr(H)}{\Pr(E|H)\Pr(H)+\Pr(E|\overline{H})\Pr(\overline{H})}$
     -   $\Pr(X | S=\text{medium}) = .6$
     -   $\Pr(X | S=\text{low}) = .2$
 
+```{r discreteIRT}
+skill <- c(high=1/3,med=1/3,low=1/3)
+like <- cbind(right=c(.9,.6,.2),wrong=c(.1,.4,.8))
+rownames(like)<-names(skill)
+probs <- sweep(like,1,skill,"*")
+probs
+```
+
+```{r mosaicIRT}
+mosaicplot(probs)
+```
+
+Posterior probability
+
+```{r dirtpost}
+probs[,1]/sum(probs[,1])
+```
+
 ## Rare Disease Problem
 
 <https://pluto.coe.fsu.edu/rdemos/IntroStats/RareDisease.Rmd>
@@ -273,9 +291,31 @@ $$ \Pr(B) = \Pr(B|A) = \Pr(B|\overline{A}) $$ $$ \Pr(A) = \Pr(A|B) = \Pr(A|\over
 
 $\Pr(Y_i)$. -- Prob of accident in a given year.
 
+```{r PYear1}
+DrivingSkill <- c(N=5/6,A=1/6)
+AccLike <- cbind(Yes=c(N=1/100,A=1/10),No=c(N=99/100,A=9/10))
+Year1 <- sweep(AccLike,1,DrivingSkill,"*")
+Year1
+sum(Year1[,"Yes"])
+
+```
+
 $\Pr(Y_1 \wedge Y_2)$ -- Accident in two years.
 
+```{r PYear12}
+Acc2Like <- AccLike
+Acc2Like[,"Yes"] <- AccLike[,"Yes"]^2
+Acc2Like[,"No"] <- 1 -Acc2Like[,"Yes"]
+Year12 <- sweep(Acc2Like,1,DrivingSkill,"*")
+Year12
+sum(Year12[,"Yes"])
+```
+
 $\Pr(Y_2 | Y_1)$ -- Accident in 2nd year given accident in first year.
+
+```{r PY1-Y2}
+sum(Year12[,"Yes"])/sum(Year1[,"Yes"])
+```
 
 ## Explanation
 
@@ -364,7 +404,7 @@ ggplot(pmf,aes(x=x,y=p)) + geom_col()
 $$ F(x) = \Pr(X\leq x) = \sum_{a < x} p(a) $$
 
 -   *Support of* $X$ is set of values for which $p(x)>0$.
--   Distribution funciton is always non-decreasing.
+-   Distribution function is always non-decreasing.
 
 ```{r df}
 pmf$Fx <- cumsum(pmf$p)
@@ -385,7 +425,7 @@ $$ \text{Var}(X) = E[(X-\mu)^2] = \sum (x-E[X])^2 p(x) $$ *Standard Deviation* $
 
 ## Linearity
 
-$$E[aX+c] = aE[c] + c$$ $$\text{Var}{aX+c} = a^2\text{Var}(X)$$
+$$E[aX+c] = aE[c] + c$$ $$\text{Var}(aX+c) = a^2\text{Var}(X)$$
 
 # Some examples
 
@@ -407,21 +447,19 @@ $$E[aX+c] = aE[c] + c$$ $$\text{Var}{aX+c} = a^2\text{Var}(X)$$
 
 [Law Of Large Numbers (Animated)](https://pluto.coe.fsu.edu/LawOfLargeNumbersAnimated.Rmd)
 
-
 ## Bootstrap Distribution
 
-* Let $X_1, \ldots, X_N$ be an i.i.d. sample from unknown distribution $F(x)$.
+-   Let $X_1, \ldots, X_N$ be an i.i.d. sample from unknown distribution $F(x)$.
 
-* Resample from from the sample with probability $1/N$ for $X=X_i$.
+-   Resample from from the sample with probability $1/N$ for $X=X_i$.
 
-* $F_N(x)$ is this empirical (bootstrap) distribution function
-
+-   $F_N(x)$ is this empirical (bootstrap) distribution function
 
 ## Strong Law
 
 As $N \rightarrow \infty$, $F_N(x) \rightarrow F(x)$
 
-* Recall $F(x) = \Pr(X \leq x)$
+-   Recall $F(x) = \Pr(X \leq x)$
 
 $$ F_n(x) = \text{count}(X_i < x)/N $$
 
@@ -429,24 +467,23 @@ By frequency definition, this should converge for every $x$.
 
 ## Statistics
 
-A _statistic_ is a _functional_ which maps a distribution function to a summary.
+A *statistic* is a *functional* which maps a distribution function to a summary.
 
-A _function_ is an operator which maps a function to a (real) value.
+A *function* is an operator which maps a function to a (real) value.
 
 By strong law of large numbers, sample statistic converges to population statistic.
-
 
 # Continuous Variables
 
 ## The Area Model
 
-* Urn model breaks down when number of possible values is not countable.
+-   Urn model breaks down when number of possible values is not countable.
 
-* Instead think of choins random point in a histogram
+-   Instead think of choins random point in a histogram
 
-  - Total area scaled to 1.
-  
-* "Event" corresponds to an area in the histogram.  
+    -   Total area scaled to 1.
+
+-   "Event" corresponds to an area in the histogram.
 
 ## Area model
 
@@ -457,15 +494,13 @@ polygon(c(3,3,4,4),c(0,.1,.1,0),col="red")
 text(3.5,.125,"Pr (3 < X < 4)")
 ```
 
-
 ## Probability Density Function (p.d.f.)
 
-* Definition of (c).d.f. is still the same
+-   Definition of (c).d.f. is still the same
 
-* p.m.f. is replaced by p.d.f. (probability density function), $f(x)$, height of curve at $x$.
+-   p.m.f. is replaced by p.d.f. (probability density function), $f(x)$, height of curve at $x$.
 
 $$F(x) = \int_{X\le x} f(X) dX $$
-
 
 ## CDFs and PDFs
 
@@ -481,30 +516,32 @@ text(c(2,2),c(.25,.75),c("f(x)","F(x)"),cex=2)
 
 ## Probability 0 and 1
 
-* What is $\Pr(x=\pi)$?
+-   What is $\Pr(x=\pi)$?
 
-  - This is a line, area is zero.
-  
-* What is $\Pr(x \not = \pi)$?
-  - Whole space minus a line (area 0) is 1.
-  
-* Probability zero means practically never
+    -   This is a line, area is zero.
 
-* Probability one mean practically certain
-  - _Almost Surely_
-  
-* But, an event of probability zero will occur
-  - In practice, alway round.
-  
+-   What is $\Pr(x \not = \pi)$?
+
+    -   Whole space minus a line (area 0) is 1.
+
+-   Probability zero means practically never
+
+-   Probability one mean practically certain
+
+    -   *Almost Surely*
+
+-   But, an event of probability zero will occur
+
+    -   In practice, alway round.
 
 ## Lebesgue--Stieltjes Integrals
 
-* Integrals are the limits of adding up tiny rectangles (trapazoids).
-* Can define the base according to any measure:
+-   Integrals are the limits of adding up tiny rectangles (trapazoids).
+-   Can define the base according to any measure:
 
-Lebesgue--Stieltjes Integral:  $E[h(x)] = \int h(x)dF(x)$
+Lebesgue--Stieltjes Integral: $E[h(x)] = \int h(x)dF(x)$
 
-If measure is everywhere continuous:  $E[h(x)] = \int h(x)f(x)dx $
+If measure is everywhere continuous: \$E\[h(x)\] = \int h(x)f(x)dx \$
 
 If measure is counting measure $E[h(x)] = \sum h(x) p(x)$
 

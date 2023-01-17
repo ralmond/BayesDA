@@ -12,18 +12,13 @@ library(shiny)
 library(ggplot2)
 ```
 
-The [binomial distribution](https://en.wikipedia.org/wiki/Binomial_distribution) can be thought of as a number of draws, $n$, from
-an urn with a proportion $p$, of black balls.
+The [binomial distribution](https://en.wikipedia.org/wiki/Binomial_distribution) can be thought of as a number of draws, $n$, from an urn with a proportion $p$, of black balls.
 
-The probability of drawing exactly $x$ balls from an this urn is:
-$$ p(X|n,p) = \binom{n}{X} p^X (1-p)^{n-X}$$
+The probability of drawing exactly $x$ balls from an this urn is: $$ p(X|n,p) = \binom{n}{X} p^X (1-p)^{n-X}$$
 
-The expected value is $np$, and the standard deviation is
-$\sqrt{np(1-p)}$.  
+The expected value is $np$, and the standard deviation is $\sqrt{np(1-p)}$.
 
-Sometimes we write this in terms of the proportion of black balls in
-the sample.  That is $p$, with a standard deviation of $\sqrt{p(1-p)/n}$.
-
+Sometimes we write this in terms of the proportion of black balls in the sample. That is $p$, with a standard deviation of $\sqrt{p(1-p)/n}$.
 
 ```{r density, echo=FALSE}
 inputPanel(
@@ -43,11 +38,6 @@ renderPlot({
 })
 ```
 
-Note that this distribution is positively skewed if $p < 0.5$ and
-negatively skewed if $p > 0.5$.
+Note that this distribution is positively skewed if $p < 0.5$ and negatively skewed if $p > 0.5$.
 
-Note how when $n$ gets large, the binomial distribution looks a lot
-like the normal.  This is one of the first central limit theorems that
-was discovered.  (The closer that $p$ is to 0 or 1, the longer
-convergence to the normal takes.)
-
+Note how when $n$ gets large, the binomial distribution looks a lot like the normal. This is one of the first central limit theorems that was discovered. (The closer that $p$ is to 0 or 1, the longer convergence to the normal takes.)
