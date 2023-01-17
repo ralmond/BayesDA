@@ -403,23 +403,112 @@ $$E[aX+c] = aE[c] + c$$ $$\text{Var}{aX+c} = a^2\text{Var}(X)$$
 
 #Law of Large Numbers
 
+[Law Of Large Numbers](https://pluto.coe.fsu.edu/LawOfLargeNumbers.Rmd)
+
+[Law Of Large Numbers (Animated)](https://pluto.coe.fsu.edu/LawOfLargeNumbersAnimated.Rmd)
+
+
 ## Bootstrap Distribution
+
+* Let $X_1, \ldots, X_N$ be an i.i.d. sample from unknown distribution $F(x)$.
+
+* Resample from from the sample with probability $1/N$ for $X=X_i$.
+
+* $F_N(x)$ is this empirical (bootstrap) distribution function
+
 
 ## Strong Law
 
+As $N \rightarrow \infty$, $F_N(x) \rightarrow F(x)$
+
+* Recall $F(x) = \Pr(X \leq x)$
+
+$$ F_n(x) = \text{count}(X_i < x)/N $$
+
+By frequency definition, this should converge for every $x$.
+
 ## Statistics
+
+A _statistic_ is a _functional_ which maps a distribution function to a summary.
+
+A _function_ is an operator which maps a function to a (real) value.
+
+By strong law of large numbers, sample statistic converges to population statistic.
+
 
 # Continuous Variables
 
 ## The Area Model
 
+* Urn model breaks down when number of possible values is not countable.
+
+* Instead think of choins random point in a histogram
+
+  - Total area scaled to 1.
+  
+* "Event" corresponds to an area in the histogram.  
+
+## Area model
+
+```{r AreaModel}
+plot(c(0,10),c(0,.15),type="n",xlab="x",ylab="f(x)",main="Uniform distribution over [0,10]")
+polygon(c(0,0,10,10),c(0,.1,.1,0),col="lightblue")
+polygon(c(3,3,4,4),c(0,.1,.1,0),col="red")
+text(3.5,.125,"Pr (3 < X < 4)")
+```
+
+
 ## Probability Density Function (p.d.f.)
+
+* Definition of (c).d.f. is still the same
+
+* p.m.f. is replaced by p.d.f. (probability density function), $f(x)$, height of curve at $x$.
+
+$$F(x) = \int_{X\le x} f(X) dX $$
+
 
 ## CDFs and PDFs
 
-## Lebesgue--Stieltjes Integrals
+```{r pdfanddf}
+plot(c(-3,3),c(0,1),xlim=c(-3,3),type="n",xlab="x",ylab= "F(x) and f(x)")
+curve(dnorm(x),add=TRUE)
+xx <- c(-3,seq(-3,-1.5,.01),-1.5)
+yy <- c(0,dnorm(seq(-3,-1.5,.01)),0)
+polygon(xx,yy,col="lightblue")
+curve(pnorm(x),add=TRUE)
+text(c(2,2),c(.25,.75),c("f(x)","F(x)"),cex=2)
+```
 
 ## Probability 0 and 1
+
+* What is $\Pr(x=\pi)$?
+
+  - This is a line, area is zero.
+  
+* What is $\Pr(x \not = \pi)$?
+  - Whole space minus a line (area 0) is 1.
+  
+* Probability zero means practically never
+
+* Probability one mean practically certain
+  - _Almost Surely_
+  
+* But, an event of probability zero will occur
+  - In practice, alway round.
+  
+
+## Lebesgue--Stieltjes Integrals
+
+* Integrals are the limits of adding up tiny rectangles (trapazoids).
+* Can define the base according to any measure:
+
+Lebesgue--Stieltjes Integral:  $E[h(x)] = \int h(x)dF(x)$
+
+If measure is everywhere continuous:  $E[h(x)] = \int h(x)f(x)dx $
+
+If measure is counting measure $E[h(x)] = \sum h(x) p(x)$
+
+Linear properties still hold.
 
 # Common Continuous Distributions
 
