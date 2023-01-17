@@ -10,7 +10,7 @@ library(cowplot)
 library(magick)
 library(shiny)
 library(vcdExtra)
-library(diagramR)
+library(DiagrammeR)
 ```
 
 # Discrete Probabilities
@@ -30,7 +30,7 @@ ggdraw() + draw_image(urn_image)
 
 -   Draw a ball without looking.
 
-\$ Probability of drawing a balck ball is $b/(b+w)$
+Probability of drawing a black ball is $b/(b+w)$
 
 ## Probability: Frequency Definition
 
@@ -40,7 +40,7 @@ ggdraw() + draw_image(urn_image)
 
 -   $C_N(E)$ is the number of times (count) that $E$ occurs in $N$ opportunities.
 
-$$ \Pr(E) = \lim_{N \rightarrow \infty} \frac{C_N(E)}{N} $$ \## Subjective Probability
+## $$ \Pr(E) = \lim_{N \rightarrow \infty} \frac{C_N(E)}{N} $$ Subjective Probability
 
 The probability of an event $E$ is $p$ if **we** think it behaves like an urn with a proportion $p$ of black balls.
 
@@ -203,6 +203,14 @@ Where \$ A_i \cap A_j =\emptyset\$ and $\bigcup_i A_i = \Omega$
 
 -   PhD: 1st (25%), 2nd (25%), 3rd (20%), 4th (15%), 5th (8%), 6th (5%), 7th (2%)
 
+```{r year}
+program <- c(master=.6,doc=.4)
+year.m <- c(.5,.4,.1,0,0,0,0)
+year.p <- c(.25,.25,.20,.15,.08,.05,.02)
+yearbyProg <- rbind(Masters=program[1]*year.m,Doc=program[2]*year.p)
+colSums(yearbyProg)
+```
+
 ## Bayes Theorem
 
 $$ \Pr(H|E) = \frac{\Pr(E|H)\Pr(H)}{\Pr(E)} $$
@@ -283,10 +291,10 @@ digraph AP {
 
 ## Conditional Independence
 
-* _Conditional Independence_: $\Pr(Y_1,Y_2|S) = \Pr(Y_1|S) \Pr(Y_2|S) $
-* Years are _marginally dependent_.
-* Separation in graph tells the story.
-* Information flows from from _Year1_ to _Driving Skill_ to _Year2_
+-   *Conditional Independence*: \$\Pr(Y_1,Y_2\|S) = \Pr(Y_1\|S) \Pr(Y_2\|S) \$
+-   Years are *marginally dependent*.
+-   Separation in graph tells the story.
+-   Information flows from from *Year1* to *Driving Skill* to *Year2*
 
 ## Another Example
 
@@ -305,47 +313,44 @@ digraph Autotrain {
 
 ## Differential Item Functioning
 
-* High stakes test we want it to be “fair” to certain group (focal group) as compared to reference group
-  - But, ability mix may be different in two groups
-* Let
- - $X_j$ be score on Item $j$
- - $A$ be ability of examinee
- - $G$ be group membership of examinee
+-   High stakes test we want it to be "fair" to certain group (focal group) as compared to reference group
+    -   But, ability mix may be different in two groups
+-   Let
+-   $X_j$ be score on Item $j$
+-   $A$ be ability of examinee
+-   $G$ be group membership of examinee
 
 Want $\Pr(X_i|A,G) = \Pr(X_i|A)$
 
-
 ## Gambler's Fallacy
 
-* For games of chance (e.g., spins of the roulette wheel) each event is independent
+-   For games of chance (e.g., spins of the roulette wheel) each event is independent
 
-* Seeing 10 heads in a row doesn’t change probability of next toss
+-   Seeing 10 heads in a row doesn't change probability of next toss
 
-*Law of large numbers is about infinity
+\*Law of large numbers is about infinity
 
-* But, unusual events makes us question our model
-
+-   But, unusual events makes us question our model
 
 ## Accident Pronness vs Gambler's Fallacy
 
-Why doesn’t the Gambler’s Fallacy principle apply to the Accident Proneness example?
-
+Why doesn't the Gambler's Fallacy principle apply to the Accident Proneness example?
 
 # Random Variables (Discrete)
 
 ## Definition
 
-* Imagine that each ball in the urn has a number painted on the side
-* Let $X(\omega)$ be the value of the number of the randomly chosen ball, _random variable_.
-* For Nominal/Ordinal variables, can use integer coding to create random variables.
+-   Imagine that each ball in the urn has a number painted on the side
+-   Let $X(\omega)$ be the value of the number of the randomly chosen ball, *random variable*.
+-   For Nominal/Ordinal variables, can use integer coding to create random variables.
 
-_Convention_:  Use captial letters for r.v.s, lower case for possible values.
+*Convention*: Use captial letters for r.v.s, lower case for possible values.
 
 ## Probability (Mass) Function (p.f., p.m.f.)
 
-* Let $p(x)= \{\omega \in \Omega: X(\omega)=x\}$ be the proportion of balls which map to $x$.
+-   Let $p(x)= \{\omega \in \Omega: X(\omega)=x\}$ be the proportion of balls which map to $x$.
 
-* Often shows with histogram
+-   Often shows with histogram
 
 ```{r barplot}
 x <- 0:10
@@ -354,13 +359,12 @@ pmf <-data.frame(x=x,p=p)
 ggplot(pmf,aes(x=x,y=p)) + geom_col()
 ```
 
-
 ## Cumulative Distribution Function (c.d.f. or d.f.)
 
 $$ F(x) = \Pr(X\leq x) = \sum_{a < x} p(a) $$
 
-* _Support of $X$_ is set of values for which $p(x)>0$.
-* Distribution funciton is always non-decreasing.
+-   *Support of* $X$ is set of values for which $p(x)>0$.
+-   Distribution funciton is always non-decreasing.
 
 ```{r df}
 pmf$Fx <- cumsum(pmf$p)
@@ -369,14 +373,11 @@ ggplot(pmf,aes(x=x,y=Fx)) + geom_step() + geom_point()
 
 ## Expected Value and Variance
 
-_Expected Value_ (mean)
+*Expected Value* (mean)
 
-$$ E[X] = \sum xp(x) = \mu $$
-_Variance_ 
+$$ E[X] = \sum xp(x) = \mu $$ *Variance*
 
-$$ \text{Var}(X) = E[(X-\mu)^2] = \sum (x-E[X])^2 p(x) $$
-_Standard Deviation_ $\sqrt{\text{Var}(X)}$
-_Precision_ $1/\text{Var}(X)$
+$$ \text{Var}(X) = E[(X-\mu)^2] = \sum (x-E[X])^2 p(x) $$ *Standard Deviation* $\sqrt{\text{Var}(X)}$ *Precision* $1/\text{Var}(X)$
 
 ## Moments
 
@@ -384,9 +385,7 @@ _Precision_ $1/\text{Var}(X)$
 
 ## Linearity
 
-$$E[aX+c] = aE[c] + c$$
-$$\text{Var}{aX+c} = a^2\text{Var}(X)$$
-
+$$E[aX+c] = aE[c] + c$$ $$\text{Var}{aX+c} = a^2\text{Var}(X)$$
 
 # Some examples
 
@@ -403,8 +402,6 @@ $$\text{Var}{aX+c} = a^2\text{Var}(X)$$
     -   Number of trials until $k$ "successes."
 
 #Law of Large Numbers
-
-
 
 ## Bootstrap Distribution
 

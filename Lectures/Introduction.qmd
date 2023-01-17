@@ -5,15 +5,7 @@ format: revealjs
 
 # Bayesian Data Analysis
 
-<<<<<<< HEAD
-** EDF 5404:  Bayesian Data Analysis **
 
-## Rumor:  Santa is Frequentist
-
-![PhD Comics 1457](http://www.phdcomics.com/comics/archive/phd121911s.gif)
-
-Image Credit:  <http://www.phdcomics.com/comics.php?f=1457>
-=======
 **EDF 5404: Bayesian Data Analysis**
 
 ## Rumor: Santa is Frequentist
@@ -21,7 +13,7 @@ Image Credit:  <http://www.phdcomics.com/comics.php?f=1457>
 ![PhD Comics 1457](http://www.phdcomics.com/comics/archive/phd121911s.gif)
 
 Image Credit: <http://www.phdcomics.com/comics.php?f=1457>
->>>>>>> 2f14e92eef33ae9713de770f1e48b4effa18f0cc
+
 
 ## Who Am I?
 
@@ -30,26 +22,16 @@ Image Credit: <http://www.phdcomics.com/comics.php?f=1457>
 [Russell]{.underline} Almond (thee, thou)
 
 ## How to find me
-<<<<<<< HEAD
--   <http://ralmond.net/>
--   Email: <ralmond@fsu.edu>
--   Office Hours, By appointment [appointment link](https://doodle.com/mm/russellalmond/book-a-time)
--   Zoom:  <https://fsu.zoom.us/my/ralmond>
--   Coffee Hour:  TTh 11:15--12:00
--   Tea Time, TTH 4:30--5:00
--   STB 3204-J
-- Has ADHD
-=======
+
 
 -   <http://ralmond.net/>
 -   Email: [ralmond\@fsu.edu](mailto:ralmond@fsu.edu){.email}
 -   Office Hours, By appointment [appointment link](https://doodle.com/mm/russellalmond/book-a-time)
 -   Zoom: <https://fsu.zoom.us/my/ralmond>
--   Coffee Hour: TTh 11:15--12:00
 -   Tea Time, TTH 4:30--5:00
 -   STB 3204-J
 -   Has ADHD
->>>>>>> 2f14e92eef33ae9713de770f1e48b4effa18f0cc
+
 
 Questions welcome during lectures (speak up if on Zoom)
 
@@ -57,34 +39,7 @@ Questions welcome during lectures (speak up if on Zoom)
 
 ![Textbook](https://covers.elsevier.com/200/9780124058880.jpg)
 
-<<<<<<< HEAD
-Kruchke, John (2014).  _Doing Bayesian Data Analysis._  Elsevier Sicence and Technology.  ISBN 978-0-12-405888-0.
 
-## Other Texts
-
-* Gelman, A., Carlin, J. B., Stern, H. S. & Rubin, D. B. (1995/2003). _Bayesian data analysis._ Chapman and Hall.
-
-  - Good reference on Bayesian statistics
-
-* Brooks, S., Gelman, A, Jones G. L., Meng, X-L (2011). _Handbook of Markov Chain Monte Carlo._ CRC Press. 
-
-  - Paper Collection on MCMC 
-
-* Gilks, W.; Richardson, S. & Spiegelhalter, D. (ed.) (1995) _Markov Chain Monte Carlo in Practice_ (Interdisciplinary Statistics) Chapman & Hall/CRC . 
-
-  - Paper collection on MCMC
-  
-  - First couple of chapters are useful intro references
-
-Liu, J. S. (2002). _Monte Carlo strategies in scientific computing._ Springer.
-
-  - Covers more exotic strategies (e.g., Importance Sampling, Particle Filter, more exotic MCMC).
-
-
-## Additional Readings
-
-Andy Gelman's Blog:  <https://andrewgelman.com>
-=======
 Kruchke, John (2014). *Doing Bayesian Data Analysis.* Elsevier Sicence and Technology. ISBN 978-0-12-405888-0.
 
 ## Other Texts
@@ -110,7 +65,6 @@ Liu, J. S. (2002). *Monte Carlo strategies in scientific computing.* Springer.
 ## Additional Readings
 
 Andy Gelman's Blog: <https://andrewgelman.com>
->>>>>>> 2f14e92eef33ae9713de770f1e48b4effa18f0cc
 
 ## Software
 
@@ -122,15 +76,11 @@ Free Student Account.
 
 Other Tools:
 
-<<<<<<< HEAD
+
 * R <https://www.r-project.org>
-* Stan <https://mcmc-stan.org>
+* Stan <https://mc-stan.org>
 * JAGS <https://sourceforge.net/projects/mcmc-jags/>
-=======
--   R <https://www.r-project.org>
--   Stan [https://mc-](https://mcmc-stan.org){.uri}[stan](https://mc-stan.org){.uri}[.org](https://mcmc-stan.org){.uri}
--   JAGS <https://sourceforge.net/projects/mcmc-jags/>
->>>>>>> 2f14e92eef33ae9713de770f1e48b4effa18f0cc
+
 
 ## Class Project
 
@@ -142,20 +92,7 @@ Part 2 (Due by End of Semester)
 
 Fit a Bayesian model to those data.
 
-<<<<<<< HEAD
-## How’s My Teaching?
 
-Dial: 644-5203
-
-Email: <ralmond@fsu.edu>
-
-* Speed Up
-
-* Slow Down
-
-* I have a question
-
-=======
 ## How's My Teaching?
 
 Dial: 644-5203
@@ -167,7 +104,6 @@ Email: [ralmond\@fsu.edu](mailto:ralmond@fsu.edu){.email}
 -   👎 Slow Down
 
 -   🖐️ I have a question
->>>>>>> 2f14e92eef33ae9713de770f1e48b4effa18f0cc
 
 People on Zoom, feel free to unmute and ask questions.
 
@@ -194,28 +130,21 @@ Confusion is a part of learning
 
 Be specific about what is confusing you
 
-<<<<<<< HEAD
 
-=======
->>>>>>> 2f14e92eef33ae9713de770f1e48b4effa18f0cc
 # An Introduction to Bayesian Thinking
 
 ## Quiz 1
 
-<<<<<<< HEAD
+
 A person takes an aptitude test that has an SEM of 5, and gets a score of 80.  The test scores are approximately normally distributed in the population of interest. 
 
 Confidence Interval:  
-=======
-A person takes an aptitude test that has an SEM of 5, and gets a score of 80. The test scores are approximately normally distributed in the population of interest.
 
-Confidence Interval:\
->>>>>>> 2f14e92eef33ae9713de770f1e48b4effa18f0cc
 $$ 80 \pm 2\cdot 5 = (70, 90)$$
 
 Use the classical Neyman-Pearson definition of a confidence interval, which is larger?
 
-<<<<<<< HEAD
+
 A) The probability that the person't true aptitute is between 70 and 90
 B) 95 \%
 C) A and B are about the same.
@@ -229,12 +158,7 @@ D) Can't tell from the information provided.
 
 * The classical confidence interval provides a mathematically precise answer to the wrong question.
 
-## 
-=======
-A)  The probability that the person't true aptitute is between 70 and 90
-B)  95 %
-C)  A and B are about the same.
-D)  Can't tell from the information provided.
+
 
 ## Parameters
 
@@ -417,9 +341,5 @@ A. Pr(difference of means = 0) B. 5% C. A and B are about the same D. Can't tell
 
 -   Probability as state of knowledge interpretation is more flexible than probability as frequency interpretation
 
-<<<<<<< HEAD
--   Solving large, complex problems is easier: if only we can solve the integrals
-=======
+
 * Solving large, complex problems is easier:  if only we can solve the integrals
->>>>>>> 2f14e92eef33ae9713de770f1e48b4effa18f0cc
->>>>>>> f069d36fca15072d5ed9220ef0c05e54f20e8630
