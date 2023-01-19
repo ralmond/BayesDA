@@ -1,0 +1,168 @@
+---
+title: "Beta and Dirichlet Parameters"
+author: "Russell Almond"
+date: "January 24, 2019"
+output: html_document
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+library(shiny)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Beta Distribution
+
+Consider two [gamma](GammaParams.Rmd) random variables, $A$ with shape parameter $\alpha$ and $B$ with shape parameter $\beta$ with the same scale or rate parameter. Now consider the ratio $\theta = \frac{A}{A+B}$. This variable has a [beta distribution](https://en.wikipedia.org/wiki/Beta_distribution).   Note that this distribution has a support of $[0,1]$, so it is excellent choice for modelling probabilities.
+
+$$ f(\theta) = \frac{\Gamma(\alpha + \beta)}{\Gamma(\alpha)\Gamma(\beta)} \theta^{\alpha -1}(1-\theta)^{\beta-1}$$
+* Mean:  $ E[\theta] = \frac{\alpha}{\alpha+\beta} $
+
+* Mode: $ \frac{alpha-1}{\alpha+\beta-2}$
+
+* Var: $\text{Var}(\theta) = \frac{\alpha\beta}{(\alpha + \beta)^2(\alpha+\beta+1)}
+
+Let $n = \alpha+\beta$ and $p = \alpha/n$.  This is an alternative parameterization in terms of mean, and _effective sample size_.
+
+
+```{r beta, echo=FALSE}
+inputPanel(
+  sliderInput("alpha", label = "Shape parameter 1 (alpha)",
+              min=0, max=15, value=3, step=1),
+  
+  sliderInput("beta", label = "Shape parameter 2 (beta)",
+              min = 0, max = 15, value = 3, step = 1)
+)
+
+renderPlot({
+  alpha <- as.numeric(input$alpha)
+  beta <- as.numeric(input$beta)
+  curve(dbeta(x,alpha,beta),
+        xlim=c(0,1),ylim=c(0,.1),
+        main=paste("Beta distribution with alpha =",alpha,
+                   "and beta = ",beta),
+        xlab="X",ylab="Density")
+
+})
+```
+
+Note that for $\alpha=\beta=1$, the beta distribution is the uniform distribution over 0, 1.
+
+There are three proposed beta distributions for "non-informative priors."
+
+* Uniform distribution: $\alpha=\beta=1$
+* Jeffrey's Rule Prior: $\alpha=\beta=1/2$.  This is uniform after a logistic transformation.
+* Jaynes' Prior: $\alpha=\beta=0$.  This is not a proper probability distribution, but is the limit of probability densities.
+
+## Dirichlet Distribution
+
+Consider $K$ gamma varaibles $A_1, \ldots, A_K$ with shape parameters $\alpha_1, \ldots, \alpha_K$, and the same scale parameter.
+
+Now consider the dependent collection of random variables
+$\theta_1, \ldots, \theta_K$, where $\theta_k = \alpha_k/(\sum_k \alpha_k)$.
+
+This random variable is defined over a $k$ dimensional simplex, as $\sum_k \theta_k = 1$.
+
+This is call the Dirichlet distribution and it has the density function:
+
+$$ f(\theta_1,\ldots,\theta_K) = \frac{\Gamma(\alpha_1 + \cdots + \alpha_K)}{\Gamma(\alpha_1)\cdots\Gamma(\alpha_K)} \theta_1^{\alpha_1 -1}\cdots\theta_K^{\alpha_K-1}$$
+Note that each component follows a beta distribution with parmeters $\alpha=\alpha_k$ and $\beta=\sum_{k'\not=k} \alpha_{k'}$.
+
+Once again, the sum of the alphas is an _effective sample size_ and this distribution can be parameterized via its mean vector and effective sample size.
+
+```{r ternay}
+# github:bursettles/ternary.R
+library(klaR)
+
+cart2ternary <- function(x, y) {
+  b = y + 1/3
+  a = -0.5*(x * 3 / sqrt(3) - 1 + b)
+  c = 1 - (a + b)
+  cbind("a" = a, "b" = b, "c" = c)
+}
+
+triimage <- function(x, y = NULL, z = NULL, main = "", label = 1:3, col = heat.colors(100), grid = seq(0.1, 0.9, by = 0.1),
+                     useRaster = TRUE, set.par = TRUE, ...) {
+  # setup the plot
+  # this is necessary to avoid problems cause by using triplot to setup the graph;
+  # see description of set.par in triplot()
+  if (set.par) {
+    if (main != "") 
+        newmar <- c(0, 0, 4, 0) + 0.1
+    else newmar <- rep(0, 4) + 0.1
+    opar <- par(mar = newmar)
+    on.exit(par(opar))
+  }
+
+  triplot(main = main, label = FALSE, frame = FALSE, grid = FALSE, set.par = FALSE, ...)
+  
+  # draw the image
+  if (missing(z)) {
+    image(x, col=col, add = TRUE, useRaster = useRaster)
+  } else {
+    image(x, y, z, col=col, add = TRUE, useRaster = useRaster)
+  }
+  
+  # Draw the frame and grid on top of the image
+  triframe(label = label)
+  invisible(trigrid(grid))
+}
+
+outer.ternary <- function(fun, length=251, ...) {
+  factory <- function(f, ...) {
+    function(x, y) {
+      triple = cart2ternary(x, y)
+      nas = apply(triple, 1, function(x) { !all(x >= (0 - 1e-7) & x <= (1 + 1e-7)) } )
+      triple[nas,] = c(NA, NA, NA)
+      f(triple[,1], triple[,2], triple[,3], ...)
+    }
+  }
+  
+  x = seq(-sqrt(3)/3, sqrt(3)/3, length=length)
+  y = seq(-1/3, 2/3, length=length)
+  z = outer(x, y, factory(fun, ...))
+  list(x=x, y=y, z=z)
+}
+
+entropy <- function(a, b, c) {
+  -a * log(a) - b * log(b) - c * log(c)
+}
+
+hardness <- function(a, b, c) {
+  1 - (a*a + b*b + c*c)
+}
+  
+lc <- function(a, b, c) {
+  1 - apply(cbind(a,b,c), 1, max)
+}
+
+margin <- function(a, b, c) {
+  m <- function(row) {
+    s = sort(row, decreasing = TRUE)
+    s[2] - s[1]
+  }
+  apply(cbind(a, b, c), 1, m)
+}
+
+nlmp <- function(a, b, c) {
+  -log(apply(cbind(a,b,c), 1, max))
+}
+
+##par(mfrow=c(2,3))
+col = rainbow(100)
+grid = seq(0.2, 0.8, by = 0.2)
+# triimage(outer.ternary(entropy, length=101), useRaster = TRUE, main = "Entropy", col = col, grid = grid)
+# triimage(outer.ternary(hardness, length=101), useRaster = TRUE, main = "Hardness", col = col, grid = grid)
+# triimage(outer.ternary(margin, length=101), useRaster = TRUE, main = "Margin", col = col, grid = grid)
+# triimage(outer.ternary(lc, length=101), useRaster = TRUE, main = "LC", col = col, grid = grid)
+triimage(outer.ternary(nlmp, length=101), useRaster = TRUE, main = "NLMP", col = col, grid = grid)
+
+alphas <- c(3,2,1)
+ddirich <- function (a,b,c) MCMCpack::ddirichlet(c(a,b,c),alphas)
+triimage(outer.ternary(ddirich,length=101), useRaster = TRUE,
+         main=paste("Dirichlet distribution with parameters: ",
+                    paste(alphas,collapse=", ")), 
+         col=col,grid=grid)
+```
+
+

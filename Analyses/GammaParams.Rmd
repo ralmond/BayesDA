@@ -1,5 +1,5 @@
 ---
-title: "Normal Parameters"
+title: "Gamma Parameters"
 author: "Russell Almond"
 date: "January 24, 2019"
 output: html_document
@@ -11,20 +11,9 @@ library(shiny)
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-The [exponential distribution](https://en.wikipedia.org/wiki/Exponential_distribution) is a distribution often used for
-waiting times.  Suppose the expected time to the next arrival is
-$\theta$.  Then the probability that person will come at exactly time
-$x$ is $f(x|\theta) = \frac{1}{\theta}e^{-x/\theta}$.  The exponential
-distribution has some interesting properties.  In particular, if you
-have already waited for time period $z$, then the conditional
-expectation is $z+\theta$.
+The [exponential distribution](https://en.wikipedia.org/wiki/Exponential_distribution) is a distribution often used for waiting times. Suppose the expected time to the next arrival is $\theta$. Then the probability that person will come at exactly time $x$ is $f(x|\theta) = \frac{1}{\theta}e^{-x/\theta}$. The exponential distribution has some interesting properties. In particular, if you have already waited for time period $z$, then the conditional expectation is $z+\theta$.
 
-Suppose instead of waiting for one event, we wait for $k$ events.
-Then we get the [gamma
-distribution](https://en.wikipedia.org/wiki/Gamma_distribution) with
-shape parameter $k$ and scale parameter $\theta$.  Its probability
-density function is:
-$$ f(x|k,\theta) = \frac{1}{\Gamma(k)\theta^k}x^{k-1}e^{-x/\theta}$$
+Suppose instead of waiting for one event, we wait for $k$ events. Then we get the [gamma distribution](https://en.wikipedia.org/wiki/Gamma_distribution) with shape parameter $k$ and scale parameter $\theta$. Its probability density function is: $$ f(x|k,\theta) = \frac{1}{\Gamma(k)\theta^k}x^{k-1}e^{-x/\theta}$$
 
 The expected value is $k\theta$ and the standard deviation is $k\theta^2$.
 
@@ -49,19 +38,8 @@ renderPlot({
 })
 ```
 
-Be somewhat careful when using the gamma distribution in R.  The gamma
-distribution is often parameterized using the rate parameter
-$\beta=1/theta$.  If you are using the scale parameter, you need to
-name it explicitly and not rely on the position.
+Be somewhat careful when using the gamma distribution in R. The gamma distribution is often parameterized using the rate parameter $\beta=1/theta$. If you are using the scale parameter, you need to name it explicitly and not rely on the position.
 
-If the shape parameter is 1, then the gamma distribution is just the
-exponential distribution.  It is extremely positively skewed.  As the
-shape parameter increases, the gamma distribution becomes more and
-more symmetric, eventually converging to the normal distribution.
+If the shape parameter is 1, then the gamma distribution is just the exponential distribution. It is extremely positively skewed. As the shape parameter increases, the gamma distribution becomes more and more symmetric, eventually converging to the normal distribution.
 
-The [chi-squared
-distribution](https://en.wikipedia.org/wiki/Chi-squared_distribution)
-is also a special case of the gamma distribution, with parameters
-$k=\nu/2$ and $\theta=\nu$ (where $\nu$ is the degrees of freedom).
-Therefore, the gamma distribution is often used to model variances.
-
+The [chi-squared distribution](https://en.wikipedia.org/wiki/Chi-squared_distribution) is also a special case of the gamma distribution, with parameters $k=\nu/2$ and $\theta=\nu$ (where $\nu$ is the degrees of freedom). Therefore, the gamma distribution is often used to model variances.
