@@ -12,14 +12,13 @@ library(shiny)
 library(ggplot2)
 ```
 
-The [negative binomial distribution](https://en.wikipedia.org/wiki/Negative_binomial_distribution) can be thought of as a number of draws of non-black balls, $x$, from an urn with a proportion $p$ of black balls, until $r$ black balls have been drawn.  When $r=1$, it is known as the _geometric distribution_
+The [negative binomial distribution](https://en.wikipedia.org/wiki/Negative_binomial_distribution) can be thought of as a number of draws of non-black balls, $x$, from an urn with a proportion $p$ of black balls, until $r$ black balls have been drawn. When $r=1$, it is known as the *geometric distribution*
 
 The probability of drawing exactly $x$ balls from an this urn is: $$ p(X=k|r,p) = \binom{k+r-1}{k} p^r (1-p)^{k}$$
 
 The expected value is $\frac{r(1-p)}{p}$, and the variance is $\frac{r(1-p)}{p^2}$.
 
 Sometimes this is written in terms of number of trials instead of number of failures (see Wikipedia entry).
-
 
 ```{r density, echo=FALSE}
 inputPanel(
@@ -34,7 +33,7 @@ renderPlot({
   r <- as.numeric(input$r)
   p <- as.numeric(input$p)
   n <- qnbinom(.995,r,p)
-  dat <- data.frame(x=0:n,y=dnbinom(0:n,n,p))
+  dat <- data.frame(x=0:n,y=dnbinom(0:n,r,p))
   ggplot(dat,aes(x,y)) +geom_col()  
 
 })
@@ -42,10 +41,8 @@ renderPlot({
 
 Note that this distribution is positively skewed.
 
-It also can come about from a Poisson process where the rate, $\lambda$ is a (gamma distributed) random variable.  Used as an overdispersed Poisson.
-
+It also can come about from a Poisson process where the rate, $\lambda$ is a (gamma distributed) random variable. Used as an overdispersed Poisson.
 
 Note the sum of negative binomials is also negative binomials.
 
-Specifically, for geometric distribution:  $\Pr( X>n | X>k) = \Pr(X > (n-k))$.
-
+Specifically, for geometric distribution: $\Pr( X>n | X>k) = \Pr(X > (n-k))$.
