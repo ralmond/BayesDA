@@ -258,7 +258,7 @@ probs[,1]/sum(probs[,1])
 
 ## Definition
 
-```{r CondProb, echo=FALSE}
+```{r IndProb, echo=FALSE}
 plot(c(0,2),c(0,1),type="n",xaxt="n",yaxt="n",xlab="",ylab="")
 polygon(c(0,0,1,1),c(0,1,1,0),col="blue")
 polygon(c(1,1,2,2),c(0,1,1,0),col="yellow")
@@ -443,9 +443,9 @@ $$E[aX+c] = aE[c] + c$$ $$\text{Var}(aX+c) = a^2\text{Var}(X)$$
 
 #Law of Large Numbers
 
-[Law Of Large Numbers](https://pluto.coe.fsu.edu/LawOfLargeNumbers.Rmd)
+[Law Of Large Numbers](https://pluto.coe.fsu.edu/rdemos/IntroStats/LawOfLargeNumbers.Rmd)
 
-[Law Of Large Numbers (Animated)](https://pluto.coe.fsu.edu/LawOfLargeNumbersAnimated.Rmd)
+[Law Of Large Numbers (Animated)](https://pluto.coe.fsu.edu/rdemos/IntroStats/LawOfLargeNumbersAnimated.Rmd)
 
 ## Bootstrap Distribution
 
@@ -469,7 +469,7 @@ By frequency definition, this should converge for every $x$.
 
 A *statistic* is a *functional* which maps a distribution function to a summary.
 
-A *function* is an operator which maps a function to a (real) value.
+A *functional* is an operator which maps a function to a (real) value.
 
 By strong law of large numbers, sample statistic converges to population statistic.
 
@@ -479,7 +479,7 @@ By strong law of large numbers, sample statistic converges to population statist
 
 -   Urn model breaks down when number of possible values is not countable.
 
--   Instead think of choins random point in a histogram
+-   Instead think of choosing a random point in a histogram
 
     -   Total area scaled to 1.
 
@@ -514,6 +514,14 @@ curve(pnorm(x),add=TRUE)
 text(c(2,2),c(.25,.75),c("f(x)","F(x)"),cex=2)
 ```
 
+-   `pnorm` is normal distribution function.
+
+-   `dnorm` is the density function
+
+-   `qnorm` is the inverse distribution function (maps probability to value)
+
+-   `rnorm`generates random numbers.
+
 ## Probability 0 and 1
 
 -   What is $\Pr(x=\pi)$?
@@ -532,7 +540,7 @@ text(c(2,2),c(.25,.75),c("f(x)","F(x)"),cex=2)
 
 -   But, an event of probability zero will occur
 
-    -   In practice, alway round.
+    -   In practice, always round.
 
 ## Lebesgue--Stieltjes Integrals
 

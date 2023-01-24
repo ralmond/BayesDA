@@ -13,32 +13,32 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Beta Distribution
 
-Consider two [gamma](GammaParams.Rmd) random variables, $A$ with shape parameter $\alpha$ and $B$ with shape parameter $\beta$ with the same scale or rate parameter. Now consider the ratio $\theta = \frac{A}{A+B}$. This variable has a [beta distribution](https://en.wikipedia.org/wiki/Beta_distribution).   Note that this distribution has a support of $[0,1]$, so it is excellent choice for modelling probabilities.
+Consider two [gamma](GammaParams.Rmd) random variables, $A$ with shape parameter $\alpha$ and $B$ with shape parameter $\beta$ with the same scale or rate parameter. Now consider the ratio $\theta = \frac{A}{A+B}$. This variable has a [beta distribution](https://en.wikipedia.org/wiki/Beta_distribution). Note that this distribution has a support of $[0,1]$, so it is excellent choice for modelling probabilities.
 
-$$ f(\theta) = \frac{\Gamma(\alpha + \beta)}{\Gamma(\alpha)\Gamma(\beta)} \theta^{\alpha -1}(1-\theta)^{\beta-1}$$
-* Mean:  $ E[\theta] = \frac{\alpha}{\alpha+\beta} $
+$$ f(\theta) = \frac{\Gamma(\alpha + \beta)}{\Gamma(\alpha)\Gamma(\beta)} \theta^{\alpha -1}(1-\theta)^{\beta-1}$$ 
 
-* Mode: $ \frac{alpha-1}{\alpha+\beta-2}$
+* Mean: $ E[\theta] = \frac{\alpha}{\alpha+\beta} $
 
-* Var: $\text{Var}(\theta) = \frac{\alpha\beta}{(\alpha + \beta)^2(\alpha+\beta+1)}
+-   Mode: $ \frac{\alpha-1}{\alpha+\beta-2}$
 
-Let $n = \alpha+\beta$ and $p = \alpha/n$.  This is an alternative parameterization in terms of mean, and _effective sample size_.
+-   Var: $\text{Var}(\theta) = \frac{\alpha\beta}{(\alpha + \beta)^2(\alpha+\beta+1)}$
 
+Let $n = \alpha+\beta$ and $p = \alpha/n$. This is an alternative parameterization in terms of mean, and *effective sample size*.
 
 ```{r beta, echo=FALSE}
 inputPanel(
   sliderInput("alpha", label = "Shape parameter 1 (alpha)",
-              min=0, max=15, value=3, step=1),
+              min=0, max=15, value=3, step=.5),
   
   sliderInput("beta", label = "Shape parameter 2 (beta)",
-              min = 0, max = 15, value = 3, step = 1)
+              min = 0, max = 15, value = 3, step = .5)
 )
 
 renderPlot({
   alpha <- as.numeric(input$alpha)
   beta <- as.numeric(input$beta)
   curve(dbeta(x,alpha,beta),
-        xlim=c(0,1),ylim=c(0,.1),
+        xlim=c(0,1),
         main=paste("Beta distribution with alpha =",alpha,
                    "and beta = ",beta),
         xlab="X",ylab="Density")
@@ -50,25 +50,23 @@ Note that for $\alpha=\beta=1$, the beta distribution is the uniform distributio
 
 There are three proposed beta distributions for "non-informative priors."
 
-* Uniform distribution: $\alpha=\beta=1$
-* Jeffrey's Rule Prior: $\alpha=\beta=1/2$.  This is uniform after a logistic transformation.
-* Jaynes' Prior: $\alpha=\beta=0$.  This is not a proper probability distribution, but is the limit of probability densities.
+-   Uniform distribution: $\alpha=\beta=1$
+-   Jeffrey's Rule Prior: $\alpha=\beta=1/2$. This is uniform after a logistic transformation.
+-   Jaynes' Prior: $\alpha=\beta=0$. This is not a proper probability distribution, but is the limit of probability densities.
 
 ## Dirichlet Distribution
 
 Consider $K$ gamma varaibles $A_1, \ldots, A_K$ with shape parameters $\alpha_1, \ldots, \alpha_K$, and the same scale parameter.
 
-Now consider the dependent collection of random variables
-$\theta_1, \ldots, \theta_K$, where $\theta_k = \alpha_k/(\sum_k \alpha_k)$.
+Now consider the dependent collection of random variables $\theta_1, \ldots, \theta_K$, where $\theta_k = A_k/(\sum_k A_k)$.
 
 This random variable is defined over a $k$ dimensional simplex, as $\sum_k \theta_k = 1$.
 
 This is call the Dirichlet distribution and it has the density function:
 
-$$ f(\theta_1,\ldots,\theta_K) = \frac{\Gamma(\alpha_1 + \cdots + \alpha_K)}{\Gamma(\alpha_1)\cdots\Gamma(\alpha_K)} \theta_1^{\alpha_1 -1}\cdots\theta_K^{\alpha_K-1}$$
-Note that each component follows a beta distribution with parmeters $\alpha=\alpha_k$ and $\beta=\sum_{k'\not=k} \alpha_{k'}$.
+$$ f(\theta_1,\ldots,\theta_K) = \frac{\Gamma(\alpha_1 + \cdots + \alpha_K)}{\Gamma(\alpha_1)\cdots\Gamma(\alpha_K)} \theta_1^{\alpha_1 -1}\cdots\theta_K^{\alpha_K-1}$$ Note that each component follows a beta distribution with parmeters $\alpha=\alpha_k$ and $\beta=\sum_{k'\not=k} \alpha_{k'}$.
 
-Once again, the sum of the alphas is an _effective sample size_ and this distribution can be parameterized via its mean vector and effective sample size.
+Once again, the sum of the alphas is an *effective sample size* and this distribution can be parameterized via its mean vector and effective sample size.
 
 ```{r ternay}
 # github:bursettles/ternary.R
@@ -155,14 +153,12 @@ grid = seq(0.2, 0.8, by = 0.2)
 # triimage(outer.ternary(hardness, length=101), useRaster = TRUE, main = "Hardness", col = col, grid = grid)
 # triimage(outer.ternary(margin, length=101), useRaster = TRUE, main = "Margin", col = col, grid = grid)
 # triimage(outer.ternary(lc, length=101), useRaster = TRUE, main = "LC", col = col, grid = grid)
-triimage(outer.ternary(nlmp, length=101), useRaster = TRUE, main = "NLMP", col = col, grid = grid)
+#triimage(outer.ternary(nlmp, length=101), useRaster = TRUE, main = "NLMP", col = col, grid = grid)
 
 alphas <- c(3,2,1)
-ddirich <- function (a,b,c) MCMCpack::ddirichlet(c(a,b,c),alphas)
+ddirich <- function (a,b,c) MCMCpack::ddirichlet(cbind(a,b,c),alphas)
 triimage(outer.ternary(ddirich,length=101), useRaster = TRUE,
          main=paste("Dirichlet distribution with parameters: ",
-                    paste(alphas,collapse=", ")), 
+                   paste(alphas,collapse=", ")), 
          col=col,grid=grid)
 ```
-
-

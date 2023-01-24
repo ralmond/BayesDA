@@ -3,4 +3,203 @@ title: "Inverse Probability"
 format: revealjs
 ---
 
-## 
+## Inverse Probability
+
+```{r libraryies}
+library(tidyverse)
+library(plotly)
+library(cowplot)
+library(magick)
+library(shiny)
+library(vcdExtra)
+library(DiagrammeR)
+```
+
+```{r urnPlot}
+
+urn_image <- "img/Amphora.png"
+getwd()
+
+ggdraw() + draw_image(urn_image)
+```
+
+-   We have a model (urn) for population
+
+-   Model has *parameters* of interest
+
+-   What can we learn about parameters from sample?
+
+## Three Approaches
+
+-   Bayesian
+    -   Unknown parameters are random variables
+    -   Use Bayes theorem for inference
+-   Classical (Frequentist)
+    -   Parameters are fixed but unknown = Derive properties of estimators
+-   Fiducial Inference (R.A. Fisher)
+    -   Uses "pivotal variables" to produce compromise
+
+## Pragmatic Bayesian Approach
+
+-   Under certain assumptions (non-informative priors) Bayesian and classical estimates are the same
+-   Can use off-the-shelf statistical software (SPSS)
+-   Can use Bayesian or classical interpretation depending on context
+
+## Motivating Example: Placement Test
+
+-   Classical Test Theory
+
+$$ {\text{observed} \atop \text{score}} = {\text{true} \atop \text{score}} + {\text{measurement}\atop\text{error}}$$ $$ X = \theta + \varepsilon $$ $$ \varepsilon \sim N(0,\sigma) $$ \## Measurement Error
+
+-   Unexplained differences from true score
+
+-   Person-by-test form interactions irrelevant to target construct
+
+-   Person-by-occasion or person-by-occasion-by-test form interactions
+
+-   If could wipe memory and repeat test infinite number of time, average would be true score, per occasion differences from true score would be measurement error
+
+## Likelihood model
+
+-   Conditional probabilities of observation given parameters
+
+$$ f(X|\theta, \sigma) = \frac{1}{\sqrt{2\pi}\sigma} e^{- \frac{1}{2}(X-\theta)^2/\sigma^2} $$
+
+## Parameter roles
+
+-   $\theta$ is target parameter
+
+-   $\sigma$ is nuisance parameter
+
+In Bayesian model, nuisance parameters are random variables, so you you can integrate out to get the expected value.
+
+## Bayesian model
+
+-   Every value (parameter, random variable) is either (a) known, or (b) has a probability distribution.
+
+-   Start with likelihood
+
+-   Create (somehow) *prior distribution* for parameters.
+
+## Discrete IRT. Example
+
+-   Scores on placement test are distributed normally about true score with standard error of 10.
+    -   \$X \sim N(\theta,10) \$
+-   Assume 3 kinds of people:
+    -   Low Ability, $\theta=60$
+    -   Moderate Ability, $\theta=75$
+    -   High ability, $\theta=90$
+-   Initial Proportion in population $(.25, .50, .25)$
+
+```{r prior}
+theta <- c(low=60,moderate=75,high=90)
+prior <- c(low=.25,moderate=.5,high=.25)
+
+pripost <- data.frame(theta,prior)
+ggplot(pripost) + geom_col(aes(y=theta,x=prior),orientation="y")
+```
+
+## Example 1, student with score of 70
+
+```{r likEx1}
+X1 <- 70
+SEM <- 10
+pripost$like1 <- dnorm(X1,pripost$theta,SEM)
+pripost$post1 <- pripost$prior*pripost$like1
+pripost$post1n <- pripost$post1/sum(pripost$post1)
+round(pripost,3)
+
+ggplot(pripost) + geom_col(aes(y=theta,x=post1n),orientation="y")
+```
+
+## Example 2, score of 80
+
+```{r Ex2}
+X2 <- 80
+SEM <- 10
+pripost$like2 <- dnorm(X2,pripost$theta,SEM)
+pripost$post2 <- pripost$prior*pripost$like2
+pripost$post2n <- pripost$post2/sum(pripost$post2)
+round(pripost,3)
+
+ggplot(pripost) + geom_col(aes(y=theta,x=post2n),orientation="y")
+```
+
+## Two data points, $X_1=70, X_2=80$
+
+```{r exchain}
+X1 <- 70
+X2 <- 80
+SEM <- 10
+pripost$like1 <- dnorm(X1,pripost$theta,SEM)
+pripost$like2 <- dnorm(X2,pripost$theta,SEM)
+pripost$post12 <- pripost$prior*pripost$like1*pripost$like2
+pripost$post12n <- pripost$post12/sum(pripost$post12)
+round(pripost,3)
+
+ggplot(pripost) + geom_col(aes(y=theta,x=post12n),orientation="y")
+```
+
+## Recap
+
+-   Prior information about parameter, $p(\theta)$
+
+-   Likelihood of data given parameter, $p(X|\theta)$
+
+-   Posterior information about parameter, \$p(\theta\|X) \propto p(X\|\theta) p(\theta) \$
+
+-   Need to calculate "normalization constant" to interpret probability.
+
+## Normal -- Normal Model
+
+[Normal--Normal Gadget](https://pluto.coe.fsu.edu/rdemos/Bayesian/NormalNormal.Rmd)
+
+## Chaining
+
+Already observed a score of 80, now observe a score of 80
+
+Same posterior if process data in the opposite order
+
+## Data and Posterior Variance
+
+-   As we observe more data:
+    -   Posterior precision increases
+    -   Posterior variance decreases
+-   Amount of information in prior/posterior is related to precision,
+    -   so amount of information increases as more data are observed.
+
+What happens if data are not a representative sample?
+
+## Shrinkage Estimator
+
+-   Estimate is weighted average of prior mean and data
+-   Often prior represents group level information
+-   Weights are determined by relative precision of prior and likelihood
+-   Estimator is biased (towards prior mean) but often has smaller mean squared error than unbiased estimate (*but only if model is correct*)
+
+## Non-informative priors
+
+-   Amount of weight given to the prior is related to its precision
+-   To give zero weight to the prior, give it 0 precision (infinite variance)
+-   Uniform distribution over real line
+-   Two problems:
+    -   Not a probability distribution
+    -   $\theta = 75$, $\theta=547,234$, and $\theta=-2,323,137$ all equally likely
+
+*Weakly informative prior* is a proper prior with small precision.
+
+## Beta -- Binomial family
+
+[Beta--Binomial Gadget](https://pluto.coe.fsu.edu/rdemos/Bayesian/BetaBinomiall.Rmd)
+
+## Priors and sample size
+
+-   If sample is big, prior gets little weight (doesn't matter much)
+-   If sample is small, prior get more weight (matters much more)
+-   Prior can also keep you out of trouble (imagine if we drew zero black balls in sample of size 10)
+-   Alternative way to judge the strength of a prior is by its *equivalent sample size*.
+
+## A better prior development procedure
+
+-   Elicit mean value from expert
+-   Set variance/precision/scale factor based on effective sample size.
