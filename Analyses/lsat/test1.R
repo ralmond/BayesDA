@@ -1,0 +1,11 @@
+source("../../R/Rcheck.R")
+load.module("glm")
+d <- read.jagsdata("lsat-data.R")
+d$m <- NULL
+inits <- read.jagsdata("lsat-init.R")
+m <- jags.model("lsat.bug", d, inits, n.chains=2, n.adapt=500)
+check.data(m, d, skip="r")
+update(m, 500)
+x <- coda.samples(m, c("alpha","beta"), n.iter=2000)
+source("bench-test1.R")
+check.fun()
