@@ -54,7 +54,7 @@ coda *
 ### LSAT Model File
 
 ```{r lsat.jags}
-last.jags <-
+lsat.jags <-
 "var r[N,K];
 data {
    for (j in 1:culm[1]) {
@@ -140,15 +140,30 @@ Note that in JAGS models need to loop over array indexes.
 ## Rasch model
   for (j in 1:N) { ## Loop over examinees
     for (k in 1:K) { ## Loop over items
-      logit(p[j,k])) <- beta*theta[j] - alpha[k]
-      r[j,k] ~ dbern(p[j,k])
+      logit(p[j,k])) <- beta*theta[j] - alpha[k];
+      r[j,k] ~ dbern(p[j,k]);
     }
-    theta[j] ~ dnorm(0,1)
+    theta[j] ~ dnorm(0,1);
   }
 ```
 
 ##### Priors
 
+Note that JAGS uses `~ dXXX` for priors.
+
+`dnorm` takes mean and _precision_ (1/variance) as parameters.  So for SD=10 -> $\sigma^{-2}=.0001$
+
+`T(0,)` truncates the normal distribution, so this gives us a 1/2 normal prior.
+
+```{Priors}
+  for (k in 1:K) {
+    alpha[k] ~ dnorm(0,0.0001);
+    a[k] <- alpha[k] - mean(alpha[]);
+  }
+  beta ~dnorm(0,0.0001)T(0,);
+```
+
+`a` is a centered version of `alpha`.  We can compute it here, or as a post processing step.
 
 
 ### Data Values
@@ -158,31 +173,74 @@ These are the output of `save`, so they look a bit odd.
 [lsat/lsat-data.R](lsat/lsat-data.R)
 
 ```{r inputdata}
-"response" <-
-structure(c(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 
-1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 
-0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 
-1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 
-0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 0, 
-0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 
-1, 1, 0, 0, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 
-1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1), .Dim = c(32, 
-5))
-"m" <-
-c(3, 6, 2, 11, 1, 1, 3, 4, 1, 8, 0, 16, 0, 3, 2, 15, 10, 29, 
-14, 81, 3, 28, 15, 80, 16, 56, 21, 173, 11, 61, 28, 298)
-"culm" <-
-c(3, 9, 11, 22, 23, 24, 27, 31, 32, 40, 40, 56, 56, 59, 61, 76, 
-86, 115, 129, 210, 213, 241, 256, 336, 352, 408, 429, 602, 613, 
-674, 702, 1000)
-"N" <- 1000. ## Number of subjects
-"R" <- 32 ## Number of unique response patterns
-#"T" <- 5 ## T is reserved keyword in R, 
-K <- 5 ##so better use K for test length
-lsat_data <- list(response, m, culm, N, R, K)
-data.frame(response, m, culm)
+lsat.dat <- read.jagsdata("lsat/lsat-data.R")
+data.frame(lsat.dat$response, lsat.dat$m, lsat.dat$culm)
+lsat.dat$K <- lsat.dat$T
+lsat.dat$T <- NULL
 ```
 
 Note: Data are in a compressed format. So first step is to replicate out to a 1000 x 5 matrix.
 
 ### Initial Values
+
+```{r InitialValues}
+lsat.inits <- rjags::read.jagsdata("lsat/lsat-init.R")
+lsat.inits
+```
+Note that you can create separate inits for each chain if you want.
+
+Values for which you don't have inits (e.g., theta) will have randomly drawn inits.
+
+## Running using R
+
+```{r setupJAGS}
+#library(JAGS)
+load.module("glm")
+#last.dat <- read.jagsdata("lsat-data.R")
+lsat.dat$m <- NULL
+#lsat.inits <- read.jagsdata("lsat-init.R")
+lsat.model <- jags.model("lsat/lsatA.bug", lsat.dat, lsat.inits, n.chains=2, n.adapt=500)
+```
+
+```{r runJAGS}
+update(lsat.model, 500) ## Burn-in
+lsat.samp <- coda.samples(last.model, c("alpha","beta"), n.iter=2000)
+```
+
+
+## Quick and dirty Coda
+
+### Summary
+
+```{r codaSummary}
+summary(lsat.samp)
+```
+
+### Traceplots
+
+```{r traceplots}
+plot(lsat.samp)
+```
+
+### Autocorrelation
+
+```{r acf1}
+acfplot(lsat.samp)
+```
+
+```{r autocorr}
+autocorr.diag(lsat.samp)
+autocorr.plot(lsat.samp)
+```
+
+```{r autocorr}
+autocorr(lsat.samp)
+```
+
+### Gelman--Rubin R
+
+```{r GelmanRubinR}
+gelman.diag(lsat.samp)
+gelman.plot(lsat.samp)
+```
+
