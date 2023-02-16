@@ -105,10 +105,11 @@ model {
 ```{declaration}
 var r[N,K];
 ```
-Declares a new local variable a N=100 by K=5 matrix.
 
-The code in the data block is run only once.
-In this case, it unpacks the `response` (32x5) into `r` (1000x5)
+Declares a new local variable a N=1000 by K=5 matrix.
+
+The code in the data block is run only once. In this case, it unpacks the `response` (32x5) into `r` (1000x5)
+
 ```{dataBlock}
 data {
    for (j in 1:culm[1]) {
@@ -122,10 +123,9 @@ data {
 }
 ```
 
-
 #### Model block
 
-The model block almost always has a section for the likelihood and for the prior.  Sometimes it also contains the calculation of some additional values used for reporting.
+The model block almost always has a section for the likelihood and for the prior. Sometimes it also contains the calculation of some additional values used for reporting.
 
 ```{model}
 model {
@@ -134,6 +134,7 @@ model {
 ```
 
 ##### Likelihood
+
 Note that in JAGS models need to loop over array indexes.
 
 ```{RaschModel}
@@ -151,7 +152,7 @@ Note that in JAGS models need to loop over array indexes.
 
 Note that JAGS uses `~ dXXX` for priors.
 
-`dnorm` takes mean and _precision_ (1/variance) as parameters.  So for SD=10 -> $\sigma^{-2}=.0001$
+`dnorm` takes mean and *precision* (1/variance) as parameters. So for SD=10 -\> $\sigma^{-2}=.0001$
 
 `T(0,)` truncates the normal distribution, so this gives us a 1/2 normal prior.
 
@@ -163,8 +164,7 @@ Note that JAGS uses `~ dXXX` for priors.
   beta ~dnorm(0,0.0001)T(0,);
 ```
 
-`a` is a centered version of `alpha`.  We can compute it here, or as a post processing step.
-
+`a` is a centered version of `alpha`. We can compute it here, or as a post processing step.
 
 ### Data Values
 
@@ -187,6 +187,7 @@ Note: Data are in a compressed format. So first step is to replicate out to a 10
 lsat.inits <- rjags::read.jagsdata("lsat/lsat-init.R")
 lsat.inits
 ```
+
 Note that you can create separate inits for each chain if you want.
 
 Values for which you don't have inits (e.g., theta) will have randomly drawn inits.
@@ -204,9 +205,8 @@ lsat.model <- jags.model("lsat/lsatA.bug", lsat.dat, lsat.inits, n.chains=2, n.a
 
 ```{r runJAGS}
 update(lsat.model, 500) ## Burn-in
-lsat.samp <- coda.samples(last.model, c("alpha","beta"), n.iter=2000)
+lsat.samp <- coda.samples(lsat.model, c("alpha","beta"), n.iter=2000)
 ```
-
 
 ## Quick and dirty Coda
 
@@ -233,7 +233,7 @@ autocorr.diag(lsat.samp)
 autocorr.plot(lsat.samp)
 ```
 
-```{r autocorr}
+```{r autocorr1}
 autocorr(lsat.samp)
 ```
 
@@ -243,4 +243,3 @@ autocorr(lsat.samp)
 gelman.diag(lsat.samp)
 gelman.plot(lsat.samp)
 ```
-

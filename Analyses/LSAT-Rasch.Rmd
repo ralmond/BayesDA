@@ -1,0 +1,116 @@
+---
+title: "LSAT problems"
+output: html_notebook
+---
+
+```{r libraries}
+library(rjags)
+library(coda)
+```
+
+## Set up the JAGS Model
+
+$$ \Pr(X) = \text{logit}^{-1} ( \theta_i - \eta_j) \ ; \quad \theta_i \sim N(0,\tau) $$
+
+```{bash}
+cat  > lsat/lsat-rasch.jags  <<EOF
+var r[N,K];
+data {
+   for (j in 1:culm[1]) {
+      r[j,] <- response[1, ];
+   }
+   for (i in 2:R) {
+      for (j in (culm[i-1] + 1):culm[i]) {
+         r[j,] <- response[i, ];
+      }
+   }
+}
+model {
+# Rasch model
+   for (j in 1:N) {
+      for (k in 1:K) {
+         logit(p[j,k]) <- theta[j] - eta[k];
+         r[j,k] ~ dbern(p[j,k]);
+      }
+      theta[j] ~ dnorm(0,taup);
+   }
+# Priors
+   for (k in 1:K) {
+      eta[k] ~ dnorm(0,0.01);
+      etac[k] <- eta[k] - mean(eta[]);
+   }
+   taup ~ dnorm(0,0.01) T(0,);
+   tau <- 1/sqrt(taup)
+}
+EOF
+```
+
+## Data and Inits
+
+```{r inputdata}
+lsat.dat <- read.jagsdata("lsat/lsat-data.R")
+data.frame(lsat.dat$response, lsat.dat$m, lsat.dat$culm)
+lsat.dat$K <- lsat.dat$T
+lsat.dat$T <- NULL
+```
+
+```{r newInits}
+rasch.inits <- list(eta=rep(0,5), taup=1)
+rasch.inits3 <- list(
+  list(eta=rep(0,5), taup=1),
+  list(eta=rep(20,5), taup=.1),
+  list(eta=rep(-20,5), taup=10)
+)
+rasch.inits
+rasch.inits3
+```
+## Setup Our run and check the model
+
+```{r setupJAGS}
+#library(JAGS)
+load.module("glm")
+#last.dat <- read.jagsdata("lsat-data.R")
+lsat.dat$m <- NULL
+#lsat.inits <- read.jagsdata("lsat-init.R")
+rasch.model <- jags.model("lsat/lsat-rasch.jags", lsat.dat, rasch.inits3, n.chains=3, n.adapt=500)
+```
+
+## Run the sampler.
+
+```{r runJAGS}
+update(rasch.model, 500) ## Burn-in
+rasch.samp <- coda.samples(rasch.model, c("eta","taup","tau"), n.iter=2000)
+```
+
+## Diagnose Convergence
+
+```{r traceplot}
+plot(rasch.samp)
+```
+```{r acf}
+acfplot(rasch.samp)
+```
+```{r gelmanR}
+gelman.diag(rasch.samp)
+gelman.plot(rasch.samp)
+```
+
+```{r runMore}
+rasch.samp1 <- coda.samples(rasch.model, c("eta","taup","tau"), n.iter=3000)
+```
+
+```{r glueTheOutput}
+rasch.samp01 <- bind_iterations(rasch.samp,rasch.samp1)
+plot(rasch.samp01)
+```
+```{r checkEss}
+effectiveSize(rasch.samp)
+effectiveSize(rasch.samp01)
+```
+
+```{r correlations}
+library(ggplot2)
+samp1 <- as.data.frame(rasch.samp[[1]])
+pivot_longer(samp1,paste("eta[",1:5,"]",sep=""),names_to = "Item", values_to="difficulty") %>%
+ggplot(aes(x=tau,y=difficulty,col=Item)) + geom_point()
+```
