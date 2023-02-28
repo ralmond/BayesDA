@@ -1,0 +1,224 @@
+---
+title: "8 Schools JAGS"
+author: "Russell Almond"
+date: "1/31/2019"
+output: html_notebook
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# The 8 Schools Problem
+
+This is the classic eight schools example from Rubin(1981)[^1]. (It is also found in Chapter 5 of Gelman et al., 2014 [^2].) The story is that 8 different schools experimented with an SAT coaching experiment. The performance gains of the coached students were compared to students on a weight list control. Separate estimates were obtained for each school, but because the size of the schools differed, the standard errors differed as well.
+
+[^1]: Rubin, D. B. (1981). Estimation in Parallel randomized experiments. *Journal of Educational Statistics*, **6**, 377-401.
+
+[^2]: Gelman, A., Carlin, J. B., Stern, H. S., Dunson, D. B., Vehtari, A. and Rubin, D. B. (2014). *Bayesian Data Analysis: Third Edition*. CRC Press. (ISBN: 978-1-4398-4095-5)
+
+Here are the data:
+
+```{r data}
+Schools <- data.frame(row.names=c("A","B","C","D","E","F","G","H"),
+                      effect = c(28.39,7.94,-2.75,6.82,-.64,.63,18.01,12.16),
+                      see = c(14.9, 10.2, 16.3, 11.0, 9.4, 11.4, 10.4, 17.6))
+
+Schools
+```
+
+Lets start by calculating a weighted average effect. I'll weight each case by the precision (one over the square of the see).
+
+```{r grand mean}
+Schools$w <- 1/Schools$see^2
+Schools.mean <- sum(Schools$w*Schools$effect)/sum(Schools$w)
+Schools.mean
+```
+
+Here is a plot of the data.
+
+```{r data Plot}
+ord <- order(Schools$effect)
+plot(Schools$effect[ord[c(1,8)]]+c(-2,2)*Schools$see[ord[c(1,8)]],
+     c(nrow(Schools),1),main = "8 Schools data.",type="n",yaxt="n",
+     xlab="Effect Size",ylab="School")
+points(Schools$effect[ord],nrow(Schools):1,pch=rownames(Schools)[ord])
+segments(Schools$effect[ord]-2*Schools$see[ord],nrow(Schools):1,
+         Schools$effect[ord]+2*Schools$see[ord],nrow(Schools):1)
+abline(v=Schools.mean,col="blue")
+
+```
+
+## Model Setup in Jags.
+
+First we need to load the packages. The `rstan` package runs stan from R. The `shinystan` package gives us a browser for the results.
+
+```{r}
+library(rjags)
+library(coda)
+library(parallel) # For using multiple chains
+```
+
+First we set up the Jags model, and put it into a variable called `school8` (note the `output.var="school8"` in stan block tag)
+
+```{bash school8}
+cat > school8.jags << EOF
+# data {
+#  int<lower=0> J; // number of schools
+#  real y[J]; // estimated treatement effects
+#  real<lower=0> psig[J]; //precision of effects.
+# }
+model {
+  for (j in 1:J) {
+    theta[j] ~ dnorm(mu,ptau)
+    y[j] ~ dnorm(theta[j],psig[j])
+  }
+  mu ~ dnorm(0,.0001)
+  ptau ~ dgamma(.01,.001)
+  tau <- sqrt(1/ptau)
+}
+EOF
+```
+
+
+## Data preparation
+
+Build a list which contains the data as elements using the names in the data section of the model.
+
+```{r School 8 Data}
+school8.dat <- list(
+  J = nrow(Schools),
+  y = Schools$effect,
+  psig=1/Schools$see^2)
+```
+
+## Running jags
+
+
+The mc.cores should work well for Unix (Linux and Mac OS), I'm not so sure about Windows.
+
+```{r multiple-threads}
+parallel::detectCores()
+```
+https://stackoverflow.com/questions/37418378/is-it-possible-to-run-multiple-chains-with-jags-on-multiple-cores-subdividing-c 
+
+```{r jags-setup}
+school8.jmod <- 
+jags.model("school8.jags", data = school8.dat,
+              n.chains = 3, n.adapt=500)
+```
+```{r jagsRun}
+update(school8.jmod, 500) ## Burn-in
+school8.samp <- coda.samples(school8.jmod, c("theta","mu","tau"), n.iter=2000)
+```
+
+## Summaries using the base Stan functions
+
+Printing gives summaries of the posterior for the specified parameters. Use the `pars` argument to select what to print.
+
+```{r print stanfit}
+summary(school8.samp)
+
+```
+
+The `plot` function gives 50% and 95% intervals.
+
+```{r stan plot}
+plot(school8.samp)
+```
+
+
+```{r stan traceplot}
+acfplot(school8.samp)
+```
+
+
+```{r stan pairs}
+plot(as.data.frame(school8.samp[[1]][,c("theta[1]","tau")]))
+
+```
+
+## Refactor the model
+
+```{bash school8a}
+cat > school8a.jags << EOF
+# data {
+#  int<lower=0> J; // number of schools
+#  real y[J]; // estimated treatement effects
+#  real<lower=0> psig[J]; //precision of effects.
+# }
+model {
+  for (j in 1:J) {
+    theta[j] ~ dnorm(0,1)
+    ymean[j] <- mu + theta[j]*tau
+    y[j] ~ dnorm(ymean[j],psig[j])
+  }
+  mu ~ dnorm(0,.0001)
+  ptau ~ dgamma(.01,.001)
+  tau <- sqrt(1/ptau)
+}
+EOF
+```
+
+```{r jags-setupa}
+school8a.jmod <- 
+jags.model("school8a.jags", data = school8.dat,
+              n.chains = 3, n.adapt=500)
+```
+
+```{r jagsRuna}
+update(school8a.jmod, 500) ## Burn-in
+school8a.samp <- coda.samples(school8a.jmod, c("ymean","mu","tau"), n.iter=5000)
+```
+
+
+```{r plotA}
+plot(school8a.samp)
+```
+```{r gelman}
+gelman.diag(school8a.samp)
+```
+```{r summary}
+summary(school8a.samp)
+```
+## Half-cauchy prior
+
+```{bash school8c}
+cat > school8c.jags << EOF
+# data {
+#  int<lower=0> J; // number of schools
+#  real y[J]; // estimated treatement effects
+#  real<lower=0> psig[J]; //precision of effects.
+# }
+model {
+  for (j in 1:J) {
+    theta[j] ~ dnorm(0,1)
+    ymean[j] <- mu + theta[j]*tau
+    y[j] ~ dnorm(ymean[j],psig[j])
+  }
+  mu ~ dnorm(0,.0001)
+  tau ~ dt(0,.01,1)T(0,)
+}
+EOF
+```
+
+```{r jags-setupc}
+school8c.jmod <- 
+jags.model("school8c.jags", data = school8.dat,
+              n.chains = 3, n.adapt=500)
+```
+
+```{r jagsRunc}
+update(school8c.jmod, 500) ## Burn-in
+school8c.samp <- coda.samples(school8c.jmod, c("ymean","mu","tau"), n.iter=5000)
+```
+
+```{r plotRunc}
+plot(school8c.samp)
+```
+```{r grsummaryc}
+gelman.diag(school8c.samp)
+summary(school8c.samp)
+```

@@ -72,11 +72,11 @@ Schools.post(Schools,c(mean=Schools.mean,sd=Inf))
 
 With infinite standard deviation in the prior, we recover the unpooled estimate. With zero standard we get NaN, but with a value close to 0 we get the completely pooled estimate.
 
-## Senstivity to prior standard deviation
+## Sensitivity to prior standard deviation
 
 Lets put a slider on $\tau$ so we can see going from the pooled to the unpooled estimate.
 
-```{r eruptions, echo=FALSE}
+```{r tauslide, echo=FALSE}
 inputPanel(
   
   sliderInput("tau", label = "School-level standard deviation:",
@@ -100,9 +100,9 @@ abline(v=Schools.mean,col="blue")
 
 So how do we get the right value for $\tau$, the high level standard deviation. One way is to try to find a value of $\tau$ that maximizes the likelihood of the observed data. We can do this using the EM algorithm.
 
-*EM* stands for expectation--maximization. In the EM algorithm, the unknown quatities are split into two pieces: latent variables, $\theta$, and parameters, $\phi$. In the example above, the school means are the latent variables, and the mean and standard deviation of the school mean distribution are the parameters. Furthermore, we need to know the sufficient statistics for the latent variables, $S(\theta)$; for the 8 schools example, this is the expected value and standard deviation of the posterior distribution. Start with an initial guess of the parameters values: $\phi^{(0)}$. Now for each cycle, $r$, there are three steps:
+*EM* stands for expectation--maximization. In the EM algorithm, the unknown quantities are split into two pieces: latent variables, $\theta$, and parameters, $\phi$. In the example above, the school means are the latent variables, and the mean and standard deviation of the school mean distribution are the parameters. Furthermore, we need to know the sufficient statistics for the latent variables, $S(\theta)$; for the 8 schools example, this is the expected value and standard deviation of the posterior distribution. Start with an initial guess of the parameters values: $\phi^{(0)}$. Now for each cycle, $r$, there are three steps:
 
--   **E-Step**: Using the current version of the parameters, $\phi^{(r)}$, calculate the expected value of the sufficient statistics for the latent variables, \$S(\theta)\^{(r+1)} = E\[S(\theta)\|\phi\^{(r)},{\bf X} \] \$.
+-   **E-Step**: Using the current version of the parameters, $\phi^{(r)}$, calculate the expected value of the sufficient statistics for the latent variables, $S(\theta)^{(r+1)} = E[S(\theta)|\phi^{(r)},{\bf X} ] $.
 
 -   **M-Step**: Find new parameter values, $\phi^{(r+1)}$ that maximize the likelihood (or posterior for Bayesian EM) of the data and sufficient statistics, $\phi^{(r+1)} = \textrm{argmax}_{\phi} P({\bf X},S(\theta)^{(r+1)}|\phi)$.
 
@@ -120,7 +120,7 @@ Let $Y_i$ be the effect size for School $i$, and let $\sigma_i$ be the standard 
 
 Let the latent variables be $\theta = \{\mu_1, \ldots, \mu_8\}$, the means for the 8 schools. The sufficient statistics are the expected value, $M_i$ and the variances $V_i$.
 
-The parameters are mean, $\xi$, and the standard devaition, $\tau$, of the school mean distribution.
+The parameters are mean, $\xi$, and the standard deviation, $\tau$, of the school mean distribution.
 
 ### E-Step
 
