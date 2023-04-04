@@ -1,0 +1,223 @@
+---
+title: "Regression Discontinuity"
+author:  
+  - "Russell Almond"
+  - "Seyfullah Tingir"
+  - "Seyma Intepe-Tingir"
+output: html_notebook
+---
+
+## Low-100 Reading Program
+
+In 2013 Florida mandated additional hour of intensive reading for 100 lowest performing elementary schools.
+
+* Based on ranking in 2012-2013
+* Goal is reading score at end of 2013-2014.
+
+How much difference does this make.
+
+## The data
+
+```{r libs}
+library(tidyverse)
+library(rjags)
+library(coda)
+library(readxl)
+```
+
+The school grades are available directly from FLDOE website:
+<https://www.fldoe.org/accountability/accountability-reporting/school-grades/index.stml>
+
+We want the School Grades which is an Excel file.
+
+```{r downloadXL}
+tf13 <- tempfile("grades13.xls")
+utils::download.file("https://www.fldoe.org/core/fileparse.php/18534/urlt/NonHighSchoolGrades13.xls",tf13, mode="wb")
+grades13 <- readxl::read_xls(tf13, skip=4)
+tf14 <- tempfile("grades14.xls")
+utils::download.file("https://www.fldoe.org/core/fileparse.php/18534/urlt/NonHighSchoolGrades14.xls",tf14, mode="wb")
+grades14 <- readxl::read_xls(tf14, skip=7)
+tf15 <- tempfile("grades15.xls")
+utils::download.file("https://www.fldoe.org/core/fileparse.php/18534/urlt/SchoolGrades15.xls",tf15, mode="wb")
+grades15 <- readxl::read_xls(tf15, skip=4)
+```
+
+Region is coded as an integer, need to change to factor.
+
+```{r regioncodes}
+grades13$Region <- factor(grades13$Region,1:8,
+                          c("Northwest", "North Central", "Northeast",
+                            "Central West", "Central", "Central East",
+                            "Southwest","Southeast"))
+grades14$Region <- factor(grades14$Region,1:8,
+                          c("Northwest", "North Central", "Northeast",
+                            "Central West", "Central", "Central East",
+                            "Southwest","Southeast"))
+grades15$Region <- factor(grades15$Region,1:8,
+                          c("Northwest", "North Central", "Northeast",
+                            "Central West", "Central", "Central East",
+                            "Southwest","Southeast"))
+```
+
+
+
+Need to join the years together.  We will do a `left_join` which keeps rows from first data frame.
+
+```{r joins}
+gr13_14 <- grades13 %>% 
+  filter(`School Type` == "01") %>%
+  select('District-School Number', 'Reading % Satisfactory or Higher', 
+         'Reading Points for Gains', 'Charter',
+         'Free or Reduced Lunch Rate', 'Minority Rate', 'Region',
+         'Title I') %>%
+  left_join(
+    grades14 %>%
+      filter(`School Type` == "01") %>%
+      select('District-School Number', 'Reading % Satisfactory or Higher', 'Reading Points for Gains'),
+    by='District-School Number', suffix=c(".13",".14"))
+gr13_14
+```
+
+## Add markers for Low-100 program.
+
+Get IDs of low performing schools.
+```{r downloadXL1}
+tflow100 <- tempfile("low100.xls")
+utils::download.file("https://www.fldoe.org/core/fileparse.php/18534/urlt/Low100_13.xls",tflow100, mode="wb")
+low100 <- readxl::read_xls(tflow100, skip=1)
+tflow300 <- tempfile("low300.xls")
+utils::download.file("https://www.fldoe.org/core/fileparse.php/18534/urlt/Low300_14.xls",tflow300, mode="wb")
+low300 <- readxl::read_xls(tflow300, skip=4)
+```
+
+```{r createFullIDs}
+low100.IDs <- sprintf("%02d%04d",low100$`District Number`,low100$`School Number`)
+low300.IDs <- sprintf("%02d%04d",low300$`District Number`,low300$`School Number`)
+```
+
+
+```{r AddLow}
+gr13_14 <- gr13_14 %>% mutate(Low100 = gr13_14$`District-School Number` %in% low100.IDs)
+gr13_14
+```
+## Center Reading Scores
+
+```{r ReadingScores}
+gr13_14 %>% mutate(Reading.13=gr13_14$`Reading % Satisfactory or Higher.13` + gr13_14$`Reading Points for Gains.13`,
+                   Reading.14=gr13_14$`Reading % Satisfactory or Higher.14` + gr13_14$`Reading Points for Gains.14`) -> gr13_14
+```
+
+
+```{r LookAtCut}
+gr13_14 %>% group_by(Low100) %>% summarise(min(Reading.13),max(Reading.13),min(Reading.14,na.rm=TRUE),max(Reading.14,na.rm=TRUE))
+```
+Some low values in the TRUE Group???
+
+```{R centerReading}
+gr13_14 %>% mutate(Reading.cc = Reading.13 - 
+                     max(gr13_14$Reading.13*gr13_14$Low100)) ->
+  gr13_14
+```
+                         
+# Set up Model description
+
+```{r modelData}
+Z1 <- gr13_14 %>% model.frame(Reading.14~Reading.cc + Low100 + Charter + `Free or Reduced Lunch Rate` + `Minority Rate` + `Title I` +Region,.,
+                              na.action=na.omit)
+Z <- gr13_14 %>% model.matrix(Reading.14~Reading.cc + Low100 + Charter + `Free or Reduced Lunch Rate` + `Minority Rate` + `Title I` +Region,.,
+                              na.action=na.omit)
+Z[,5] <- scale(Z[,5])
+Z[,6] <- scale(Z[,6])
+head(Z)
+```
+```{r JAGSData}
+YY <- Z1[,1]
+XX <- Z[,1:3] # Reading.cc and Low100
+ZZ <- Z[,4:ncol(Z)] # Other variables.
+N <- length(YY)
+K1 <- 5
+K2 <- ncol(ZZ)
+M <- 12
+QQ1 <- matrix(0,M,5)
+colnames(QQ1) <- c("X^2", "X^3", "T*X", "T*X^2", "T*X^3")
+QQ2 <- matrix(0,M,5)
+colnames(QQ2) <- c("Charter","FRPSL","Minority","Title1","Region")
+gr13_14.dat <- list(N=N, K1=K1, K2=K2, M=M, YY=YY, XX=XX, ZZ=ZZ, QQ1=QQ1, QQ2=QQ2)
+```
+
+```{r editQMatrixes}
+write.csv(cbind(QQ1,QQ2),"QQ.csv")
+system("open QQ.csv")
+```
+
+```{r readQmatrixes}
+QQQ <- read.csv("QQ.csv")
+gr13_14.dat$QQ1 <- QQQ[,1+1:K1]
+QR <- QQQ[,ncol(QQQ)]
+gr13_14.dat$QQ2 <- cbind(QQQ[,(K1+2):ncol(QQQ)],QR,QR,QR,QR,QR,QR)
+gr13_14.dat$M <- nrow(QQQ)
+```
+
+# Run Jags
+
+```{r runAmodel}
+gr13_14.dat$M <- NULL
+gr13_14.dat$K2 <- ncol(ZZ)
+gr13_14.dat$m <- 1
+load.module("dic")
+gr13_14.model1 <- jags.model("Low100-1.jags",gr13_14.dat,
+                             n.chains=3)
+```
+```{r sampleModel1}
+model1.samp <- coda.samples(gr13_14.model1,c("b0","bX","bT","ATE","deviance"), 2000)
+                            
+```
+```{r}
+plot(model1.samp)
+summary(model1.samp)
+```
+
+```{r mod2}
+gr13_14.dat$m <- 2
+gr13_14.model2 <- jags.model("Low100-1.jags",gr13_14.dat,
+                             n.chains=3)
+model2.samp <- coda.samples(gr13_14.model2,c("b0","bX","bT","ATE","deviance"), 2000)
+plot(model2.samp)
+summary(model2.samp)
+```
+
+```{r fitemall}
+models <- list(gr13_14.model1,gr13_14.model2)
+samples <- list(model1.samp,model2.samp)
+for (m in 3:12) {
+  gr13_14.dat$m <- m
+  models[[m]] <- jags.model("Low100-1.jags",gr13_14.dat,
+                             n.chains=3)
+  samples[[m]] <- coda.samples(models[[1]],c("b0","ATE","bT","bX","b2","b3","deviance"), 2000)
+}
+```
+```{r DICs}
+sapply(samples,function(s) summary(s)[[1]][[2,1]])
+```
+
+## Another Model
+
+Make the Q matrix random.
+
+```{r newDataModel}
+gr13_14.dat1 <- list(YY=YY, X=Z[,2], "T"=Z[,3], ZZ=Z[,4:ncol(Z)], N=length(YY), K=ncol(Z)-3)
+gr13_14.modelNew <- jags.model("Low100-2.jags",gr13_14.dat1,
+                             n.chains=3)
+```
+
+```{r NewRun}
+newModel.samp <- coda.samples(gr13_14.modelNew,c("b0","bX","bT","bXT","bZ","bZT","QXT","QZ","QZT","ATE","deviance"), 2000)
+```
+```{r NewSummary}
+summary(newModel.samp)
+```
+
+
+## References
+
+Tingir, S. Almond, R.G. & Intepe-Tingir, S. (2020). Estimating the Effect of Florida's Low-100 Reading Program: Summarizing Regression Discontinuity Models with Bayesian Model Averaging.

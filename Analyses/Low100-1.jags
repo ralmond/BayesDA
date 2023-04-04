@@ -1,0 +1,37 @@
+var predY[N], XXX[N,K1], TE[N], b2[K1], b3[K2];
+data {
+  XXX[,1] <- XX[,2]*XX[,2]
+  XXX[,2] <- XXX[,1]*XX[,2]
+  XXX[,3] <- XX[,2]*XX[,3]
+  XXX[,4] <- XXX[,1]*XX[,3]
+  XXX[,5] <- XXX[,2]*XX[,3]
+} 
+model {
+  for (n in 1:N) {
+    #predY[n] <- b0*XX[n,1] # column
+      predXX[n] <- bX*XX[n,2]+bT*XX[n,3]
+      predXXX[n] <- sum(QQ1[m,]*b2[]*XXX[n,])
+      predZZ[n] <- sum( QQ2[m,]*b3[]*ZZ[n,])
+    predY[n] <- b0 + predXX[n] + predXXX[n] + predZZ[n]
+    ## Treatment effect, expected difference if we were treated.
+    TE[n] <- bT+QQ1[m,3]*b2[3]*XX[n,2] + sum(QQ1[m,4:5]*b2[4:5]*XXX[n,1:2]) 
+    YY[n] ~ dnorm(predY[n],tau)
+    #ssr[m] <- sum((YY-predY)*(YY-predY))*tau
+  }
+  ## Priors
+  b0 ~ dnorm(0,.01)
+  bX ~ dnorm(0,.01)
+  bT ~ dnorm(0,.01)
+  for (k in 1:K1) {
+    b2[k] ~ dnorm(0,.01)
+  }
+  for (k in 1:K2) {    
+    b3[k] ~ dnorm(0,.01)
+  }
+  sig ~ dnorm(0,.001)T(0,)
+  tau <- 1/sig/sig
+  ## Average Treatment Effect
+  ATE <- mean(TE)
+}
+
+  

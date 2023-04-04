@@ -1,0 +1,40 @@
+var predY[N], predX[N], TE[N], QZT0[K], QZ[K], bZ[K], QZT[K], bZT[K];
+## N -- number of schools
+## K -- number of auxiliary predictors
+## X -- Pretest Score
+## YY -- Posttest Score
+## T -- Treatement (binary)
+## ZZ -- other covariates
+## TE -- Treatment effect
+
+model {
+  for (n in 1:N) {
+      predX[n] <- b0 + bX[1]*X[n] + sum(QZ[]*bZ[]*ZZ[n,])
+      TE[n] <- bT[1] + QXT*bXT*X[n] + sum(QZT[]*bZT[]*ZZ[n,])
+    ## Prediction with treatment
+    predY[n] <-  predX[n] +TE[n]*T[n] 
+    YY[n] ~ dnorm(predY[n],tau)
+  }
+  ## Model selection
+  QXT ~ dbern(.5)
+  for (k in 1:K) {
+    QZ[k] ~ dbern(.5)
+    QZT0[k] ~ dbern(.5)
+    QZT[k] <- QZ[k]*QZT0[k]
+  }
+  ## Priors
+  b0 ~ dnorm(0,.01)
+  bX ~ dnorm(0,.01)
+  bT ~ dnorm(0,.01)
+  bXT ~ dnorm(0,.01)
+  for (k in 1:K) {
+    bZ[k] ~ dnorm(0,.01)
+    bZT[k] ~ dnorm(0,.01)
+  }
+  sig ~ dnorm(0,.001)T(0,)
+  tau <- 1/sig/sig
+  ##
+  ATE <- mean(TE)
+}
+
+  
