@@ -1,0 +1,17 @@
+
+# data is Y[N,J];
+var alpha[N], pij[N,J];  
+model {
+  for (i in 1:N) {
+    alpha[i] ~ dbern(palpha)
+    pij[i,] <- (1-s[])*alpha[i]+g[]*(1-alpha[i])
+    for (j in 1:J) {
+      Y[i,j] ~ dbern(pij[i,j])
+    }
+  }
+  for (j in 1:J) {
+    s[j] ~ dbeta(.5,.5)
+    g[j] ~ dbeta(.5,.5)
+  }
+  palpha ~ dbeta(.5,.5)
+}

@@ -13,9 +13,14 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # The 8 Schools Problem
 
-This is the classic eight schools example from Rubin(1981)[^1].  (It is also found in Chapter 5 of Gelman et al., 2014 [^2].)  The story is that 8 different schools experimented with an SAT coaching experiment.  The performance gains of the coached students were compared to students on a weight list control.  Separate estimates were obtained for each school, but because the size of the schools differed, the standard errors differed as well.
+This is the classic eight schools example from Rubin(1981)[^1]. (It is also found in Chapter 5 of Gelman et al., 2014 [^2].) The story is that 8 different schools experimented with an SAT coaching experiment. The performance gains of the coached students were compared to students on a weight list control. Separate estimates were obtained for each school, but because the size of the schools differed, the standard errors differed as well.
+
+[^1]: Rubin, D. B. (1981). Estimation in Parallel randomized experiments. *Journal of Educational Statistics*, **6**, 377-401.
+
+[^2]: Gelman, A., Carlin, J. B., Stern, H. S., Dunson, D. B., Vehtari, A. and Rubin, D. B. (2014). *Bayesian Data Analysis: Third Edition*. CRC Press. (ISBN: 978-1-4398-4095-5)
 
 Here are the data:
+
 ```{r data}
 Schools <- data.frame(row.names=c("A","B","C","D","E","F","G","H"),
                       effect = c(28.39,7.94,-2.75,6.82,-.64,.63,18.01,12.16),
@@ -23,13 +28,17 @@ Schools <- data.frame(row.names=c("A","B","C","D","E","F","G","H"),
 
 Schools
 ```
-Lets start by calculating a weighted average effect.  I'll weight each case by the precision (one over the square of the see).
+
+Lets start by calculating a weighted average effect. I'll weight each case by the precision (one over the square of the see).
+
 ```{r grand mean}
 Schools$w <- 1/Schools$see^2
 Schools.mean <- sum(Schools$w*Schools$effect)/sum(Schools$w)
 Schools.mean
 ```
+
 Here is a plot of the data.
+
 ```{r data Plot}
 ord <- order(Schools$effect)
 plot(Schools$effect[ord[c(1,8)]]+c(-2,2)*Schools$see[ord[c(1,8)]],
@@ -44,7 +53,7 @@ abline(v=Schools.mean,col="blue")
 
 ## Model Setup in Stan.
 
-First we need to load the packages.  The `rstan` package runs stan from R. The `shinystan` package gives us a browser for the results. 
+First we need to load the packages. The `rstan` package runs stan from R. The `shinystan` package gives us a browser for the results.
 
 ```{r}
 library(rstan)
@@ -57,7 +66,7 @@ First we set up the Stan model, and put it into a variable called `school8` (not
 ```{stan output.var="school8.stan"}
 data {
   int<lower=0> J; // number of schools
-  real y[J]; // estimated treatement effects
+  real y[J]; // estimated treatment effects
   real<lower=0> sigma[J]; //s.e. of effects.
 }
 parameters {
@@ -75,40 +84,42 @@ model {
 
 ### Parts of the stan code.
 
-Almost all models will have a `data`, `parameters` and `model` block.  They could have others as well (common ones are `transformed data` to do pre-calculations and `transformed parameters` to recast the model).
+Almost all models will have a `data`, `parameters` and `model` block. They could have others as well (common ones are `transformed data` to do pre-calculations and `transformed parameters` to recast the model).
 
 #### Data
 
-In a stan model, _data_ refers to values that don't change over the course of the MCMC loop.  This tends to be one of three things:
-* The observed data values.
-* Fixed hyperparameters for prior distributions.
+In a stan model, *data* refers to values that don't change over the course of the MCMC loop. This tends to be one of three things: 
+* The observed data values. 
+* Fixed hyperparameters for prior distributions. 
 * Structural hyperparamters (e.g., sample size, number of groups).
 
-In stan (like C++) all variables must be declared.  They are generally either `int` or `real` (here `vector` is shorthand for a vector of real values).  The modifiers <lower=XXX> and <upper=XXX> can be used to constrain the inputs.  In the data field this is just used to to type checking.
+In stan (like C++) all variables must be declared. They are generally either `int` or `real` (here `vector` is shorthand for a vector of real values). The modifiers \<lower=XXX\> and \<upper=XXX\> can be used to constrain the inputs. In the data field this is just used to to type checking.
 
 #### Parameters
 
-The parameters are the values that stan will try to estimate.  These include both latent variables and ordinary parameters and hyperparameters.  
+The parameters are the values that stan will try to estimate. These include both latent variables and ordinary parameters and hyperparameters.
 
-In stan, parameters should all be real.  Non-continuous parameters don't work with the Hamiltonian Monte Carlo.  (There are tricks for dealing with common cases like mixture models in the stan examples.)  This is called `lp__` (log pdf) in the output.
+In stan, parameters should all be real. Non-continuous parameters don't work with the Hamiltonian Monte Carlo. (There are tricks for dealing with common cases like mixture models in the stan examples.) This is called `lp__` (log pdf) in the output.
 
-Note carefully the use of the lower and upper bounds.  It is important for stan to know when a parameter is restricted to say positive values (i.e., a scale parameter) as it needs to constrain the space for the sampler.
+Note carefully the use of the lower and upper bounds. It is important for stan to know when a parameter is restricted to say positive values (i.e., a scale parameter) as it needs to constrain the space for the sampler.
 
 #### Model
 
-This section gives the distribution for all of the parameters.  First I give the BUGS-like way of doing this.  This is to use the `~` operator to give the distribution.  The names are slightly different in stan and R, so the rstan function `lookup` can help you find the stan function corresponding to the R function.
+This section gives the distribution for all of the parameters. First I give the BUGS-like way of doing this. This is to use the `~` operator to give the distribution. The names are slightly different in stan and R, so the rstan function `lookup` can help you find the stan function corresponding to the R function.
+
 ```{r lookup, echo=TRUE}
 lookup(dnorm)
 lookup(dt)
 ```
 
-Note that what stan is actually doing in the model block is calculating the log p.d.f.  Thus, the commented out expressions are an alternative to the `~` notation.  
+Note that what stan is actually doing in the model block is calculating the log p.d.f. Thus, the commented out expressions are an alternative to the `~` notation.
 
-Finally, note that this is an incomplete Bayesian model as there are no distributions for `mu` or `tau`.  In stan this means we are implicitly putting a uniform prior on `mu` and `log(tau)`; the latter is transformed so that it will always be positive.  These are improper priors, but stan will be fine as long as the posterior is proper.
+Finally, note that this is an incomplete Bayesian model as there are no distributions for `mu` or `tau`. In stan this means we are implicitly putting a uniform prior on `mu` and `log(tau)`; the latter is transformed so that it will always be positive. These are improper priors, but stan will be fine as long as the posterior is proper.
 
 ## Data preparation
 
 Build a list which contains the data as elements using the names in the data section of the model.
+
 ```{r School 8 Data}
 school8.dat <- list(
   J = nrow(Schools),
@@ -118,7 +129,7 @@ school8.dat <- list(
 
 ## Running Stan
 
-There are two funcitons to start the sampling in stan.  The first one is `stan(file=XXX,data=YYY,...)`.  This assumes that the stan model is in a file.  However, with R markdown, we already saved the model in an object so we can use `sampling(model,data=YYY,...)`.  By the way, this same function can be used to make additional samples after we have sampled for a while.
+There are two functions to start the sampling in stan. The first one is `stan(file=XXX,data=YYY,...)`. This assumes that the stan model is in a file. However, with R markdown, we already saved the model in an object so we can use `sampling(model,data=YYY,...)`. By the way, this same function can be used to make additional samples after we have sampled for a while.
 
 The mc.cores should work well for Unix (Linux and Mac OS), I'm not so sure about Windows.
 
@@ -134,11 +145,13 @@ school8.fit1 <- sampling(
 )
 summary(school8.fit1)
 ```
+
 Alternate style using external file.
+
 ```{r Run Stan-stan}
 options(mc.cores = parallel::detectCores()-1)
 school8.fit1 <- stan(
-  file="Bayesian/school8.stan",       # The model
+  file="school8.stan",       # The model
   data = school8.dat, # The data
   chains = 5,
   warmup = 1000,
@@ -150,7 +163,7 @@ summary(school8.fit1)
 
 ## Summaries using the base Stan functions
 
-Printing gives summaries of the posterior for the specified parameters.  Use the `pars` argument to select what to print.
+Printing gives summaries of the posterior for the specified parameters. Use the `pars` argument to select what to print.
 
 ```{r print stanfit}
 print(school8.fit1,pars=c("theta","mu","tau","lp__"), probs=c(.1,.5,.9))
@@ -158,6 +171,7 @@ print(school8.fit1,pars=c("theta","mu","tau","lp__"), probs=c(.1,.5,.9))
 ```
 
 The `plot` function gives 50% and 95% intervals.
+
 ```{r stan plot}
 plot(school8.fit1)
 ```
@@ -171,7 +185,6 @@ rstan::traceplot(school8.fit1,pars=c("mu","tau","lp__"), inc_warmup=TRUE, nrow=3
 What we are looking for here is (a) white-noise like, and all chains plotting over top of each other.
 
 Typically variance and scale parameters will be positively skewed, and log-posterior is often not as well behaved as others.
-
 
 Pair plot sometimes uncover problems with models.
 
@@ -188,14 +201,4 @@ Shinystan opens a new shiny workspace which allows interactive browsing of the r
 school8.fit1s <- launch_shinystan(school8.fit1)
 ```
 
-
-
 ### References
-
-[^1]: Rubin, D. B. (1981).  Estimation in Parallel randomized experiments.  _Journal of Educational Statistics_, __6__, 377-401.
-
-[^2]: Gelman, A., Carlin, J. B., Stern, H. S., Dunson, D. B., Vehtari, A. and Rubin, D. B. (2014).  _Bayesian Data Analysis:  Third Edition_.  CRC Press.  (ISBN:  978-1-4398-4095-5)
-
-[^3]: Gelman, A. and Hill, J. (2007).  _Data Analysis Using Regression and Hierarchical/Multilevel Models._ Cambridge University Press.
-
-[^4]: Dempster, A. P. Laird, N. M. and Rubin, D. B. (1977).  Maximum likelihood from incomplete data via the EM algorithm (with discussion).  _Journal of the Royal Statistical Society,_ __39__, 1--38.

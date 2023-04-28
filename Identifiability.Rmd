@@ -1,0 +1,88 @@
+---
+title: "Identification Issues"
+output: html_notebook
+---
+
+## Identification.
+
+Let $\Theta$ be our parameters, and let $\Theta'$ be a set of parameters that have a one-to-one mapping with $\Theta$.
+
+If $f({\bf Y}|\Theta) = f({\bf Y}|\Theta')$ for all data sets ${\bf Y}$, then in the classical (maximum likelihood) world they are *not identifiable* from the data.
+
+In the Bayesian, world, $f(\Theta|{\bf Y})$ will differ from $f(\Theta'|{\bf Y})$ only by the prior distribution.
+
+## Example 1: Location identification
+
+Consider an IRT model.
+
+$$
+\theta_i \sim N(\mu,\sigma)\qquad \text{ability}\\
+\beta_j \sim N(\xi,\tau) \qquad \text{difficulty}\\
+\alpha_j \sim |N(0,\nu)| \qquad \text{discrimination}\\
+\text{logit}(p_{ij}) = \alpha_j (\theta_i - \beta_j)\\
+y_{ij} \sim Bern(p_{ij})
+$$
+
+Let $\mu'=\mu+\delta$ and let $\xi' = \xi + \delta$
+
+Solution 1: Fix $\mu=0$ or $\xi=0$.
+
+Solution 2: Fit chain, but in every cycle calculate $\delta^{(r)}=\frac{1}{N}\sum \theta_i^{(r)}$ or $\delta^{(r)}=\frac{1}{J}\sum \beta_j^{(r)}$.
+
+Let $\mu^{*(r)} = \mu^{(r)}-\delta^{(r)}$, $\theta_i^{*(r)}=\theta_i^{(r)}-\delta^{(r)}$, $\xi^{*(r)}=\xi^{(r)}+\delta^{(r)}$, $\beta_j^{*(r)}=\beta_j^{(r)}+\delta^{(r)}$.
+
+## Example 2:  Scale Identification
+
+$\tau^{*} = c\tau$
+
+$\sigma^{*} = c\sigma$
+
+$\nu^{*} = \nu/c$
+
+Same identification problem.
+
+Fix $\sigma=1$.
+
+## Example 3:  Mixture Model
+
+$z_i \sim Categorical({\bf p})$ $Z$ goes from 1 to $K$, ${\bf p}$ is a probability vector.
+
+$$
+y_i \sim \begin{cases}
+N(\mu_1,\sigma_1) & z_i = 1 \\
+N(\mu_2,\sigma_2) & z_i = 2 \\
+...\\ 
+N(\mu_K,\sigma_K) & z_i = K \\
+\end{cases}
+$$
+
+Problem is we can swap the labels, $k'$ is a random permutation of $k$.
+
+Constrain $\mu_1 < \mu_2 < … <\mu_K$.
+
+Constrain $p_1 > p_2 > \ldots > p_K$.
+
+``` stan
+bb[] ~ beta(a[],b[])
+p[1] = bb[1]
+p[2] = bb[2]*(1-p[1])
+p[3] = bb[3]*(1-p[1]-p[2])
+...
+```
+
+Constrain $\sigma_1 < \sigma_2 <…<\sigma_K$
+
+Constrain $Z_1=1$, $Z_2=2$, ..., \$Z\_{K-1}=K-1\$ and sort the data so this is true.
+
+Post-hoc sort each row so that the constraint is satisfied.
+
+For each cycle
+
+```{r postHocSort}
+for (r in 1:R) {. ## Loop over cycles
+  ord[r,] <- order(data$mu[r,])
+  data$m[r,] <- data$mu[r,ord[r,]]
+  data$p[r,] <- data$p[r,ord[r,]]
+  data$sig[r,] <-data$sig[r,ord[r,]]
+}
+```

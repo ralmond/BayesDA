@@ -1,0 +1,190 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r libs}
+library(tidyverse)
+library(rjags)
+library(coda)
+```
+
+## Simple binary latent class model.
+
+Let $\alpha_i \in {1,0}$ (mastery, non-mastery)
+
+Let $Y_{ij} \in {1,0}$ (correct, incorrect)
+
+Let $g_j \in [0,1]$ is the probability of a correct response $p(Y_{ij}=1|\alpha_i=0)$ (guessing parameter)
+
+Let $s_j = p(Y_{ij}=0|\alpha_i=1)$ (slipping parameter).
+
+$${\cal L}({\bf Y}| {\bf \alpha}, {\bf g}, {\bf s}) =
+  \prod_{i=1}^N \prod_{j=1}^J p(Y_{ij}|\alpha_i,g_j,s_j) = 
+  \prod_{i=1}^N \prod_{j=1}^J \left [
+  \begin{array}[l]
+  \ Y_{ij}\left ((1-s_j)\alpha_i + (1-\alpha_i)*g_j\right ) \ +\\
+  (1-Y{ij})\left (1-(1-s_j)\alpha_i - (1-\alpha_i)*g_j\right )
+  \end{array}
+  \right ]
+$$
+
+## Jags Model, first try
+
+```{r model1}
+write("
+# data is Y[N,J];
+var alpha[N], pij[N,J];  
+model {
+  for (i in 1:N) {
+    alpha[i] ~ dbern(palpha)
+    pij[i,] <- (1-s[])*alpha[i]+g[]*(1-alpha[i])
+    for (j in 1:J) {
+      Y[i,j] ~ dbern(pij[i,j])
+    }
+  }
+  for (j in 1:J) {
+    s[j] ~ dbeta(.5,.5)
+    g[j] ~ dbeta(.5,.5)
+  }
+  palpha ~ dbeta(.5,.5)
+}", "lc2model1.jags")
+```
+
+## Load ACED data
+
+```{r loadACED}
+ACED <- read_csv("https://ecd.ralmond.net/ACED/ACED-outcomes.csv")
+CRitems <- ACED %>% select(matches("tCommonRatio")) %>% 
+  mutate(across(starts_with("t"),~ as.numeric(.x =="Yes")))
+head(CRitems)
+```
+
+```{r JAGSData}
+CR.data <- list(Y=as.matrix(CRitems), J=ncol(CRitems), N=nrow(CRitems))
+```
+
+## JAGS Run
+
+```{r SetupModel}
+load.module("dic")
+lc2.model1 <- jags.model("lc2model1.jags",CR.data,
+                             n.chains=5)
+```
+
+```{r sampleModel1}
+model1.samp <- coda.samples(lc2.model1,c("palpha","g","s","deviance"), 2000)
+                            
+```
+
+```{r plotIt}
+plot(model1.samp[,c("palpha","s[1]","g[1]")])
+```
+
+```{r summary}
+summary(model1.samp)
+```
+
+## Again with some initial values.
+
+```{r modelInits}
+inits=list(list(palpha=.2),list(palpha=.2),list(palpha=.5),list(palpha=.8),list(palpha=.8))
+lc2.model1i <- jags.model("lc2model1.jags",CR.data,inits,n.chains=5)
+```
+
+```{r sampleModel1i}
+model1i.samp <- coda.samples(lc2.model1i,c("palpha","g","s","deviance"), 2000)
+                            
+```
+
+```{r plotIt1i}
+plot(model1i.samp[,c("palpha","s[1]","g[1]")])
+```
+
+## Different data set
+
+```{r explicit}
+ExplicitItems <-  ACED %>% select(matches("tExplicitGeometric")) %>% 
+  mutate(across(starts_with("t"),~ as.numeric(.x =="Yes")))
+summary(CRitems)
+summary(ExplicitItems)
+```
+
+```{r ExpData}
+Exp.data <- list(Y=as.matrix(ExplicitItems), J=ncol(ExplicitItems), N=nrow(ExplicitItems))
+```
+
+## JAGS Run
+
+```{r SetupModele}
+lc2.model1e <- jags.model("lc2model1.jags",Exp.data,
+                             n.chains=5)
+```
+
+```{r sampleModel1e}
+model1e.samp <- coda.samples(lc2.model1e,c("palpha","g","s","deviance"), 2000)
+                            
+```
+
+```{r plotIt1e}
+plot(model1e.samp[,c("palpha","s[1]","g[1]")])
+```
+
+## With inits to setup multiple modes.
+
+```{r SetupModelei}
+lc2.model1ei <- jags.model("lc2model1.jags",Exp.data,inits,
+                             n.chains=5)
+```
+
+```{r sampleModel1ei}
+model1ei.samp <- coda.samples(lc2.model1ei,c("palpha","g","s","deviance"), 2000)
+```
+```{r plotIt1ei}
+plot(model1ei.samp[,c("palpha","s[1]","g[1]")])
+```
+
+
+## Alternate models:
+
+Want probability of success for masters to always be higher than for non-masters.
+
+$ (1-s_j) \geq g_j$
+
+$ g_j' = \phi_j (1-s_j) $
+$\phi_j \sim Beta(.5,.5)$
+
+```{r model2}
+write("
+# data is Y[N,J];
+var alpha[N], pij[N,J], g[J];  
+model {
+  for (i in 1:N) {
+    alpha[i] ~ dbern(palpha)
+    pij[i,] <- (1-s[])*(alpha[i]+phi[]*(1-alpha[i]))
+    for (j in 1:J) {
+      Y[i,j] ~ dbern(pij[i,j])
+    }
+  }
+  for (j in 1:J) {
+    s[j] ~ dbeta(.5,.5)
+    phi[j] ~ dbeta(.5,.5)
+    g[j] <- (1-s[j])*phi[j]
+  }
+  palpha ~ dbeta(.5,.5)
+}", "lc2model2.jags")
+```
+
+## Post hoc reversal.
+
+```{r headMCMC}
+arow <- model1ei.samp[[1]][1,]
+gvars <- paste("g[",1:6,"]",sep="")
+svars <- paste("s[",1:6,"]",sep="")
+arow
+xrow <- arow
+xrow["palpha"] <- 1-arow["palpha"]
+xrow[gvars] <- 1-arow[svars]
+xrow[svars] <- 1-arow[gvars]
+xrow
+```

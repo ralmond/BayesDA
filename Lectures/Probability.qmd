@@ -252,7 +252,7 @@ probs[,1]/sum(probs[,1])
 
 ## Rare Disease Problem
 
-<https://pluto.coe.fsu.edu/rdemos/IntroStats/RareDisease.Rmd>
+
 
 # Independence
 
